@@ -7,6 +7,7 @@
         'submitted' => 'yellow',
         'ready_for_submission' => 'yellow',
     ];
+    $totalApplications = collect($dashboardKpis ?? [])->firstWhere('key', 'applications')['value'] ?? 0;
 @endphp
 
 <x-admin-layout title="Dashboard">
@@ -53,11 +54,14 @@
                 <h2 class="text-lg font-bold text-slate-950">Admin App Modules</h2>
                 <p class="mt-1 text-sm text-slate-500">Open each AMIS admin workspace from the dashboard Launcher.</p>
             </div>
-            <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">2 modules</span>
+            <div class="flex items-center gap-2">
+                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{{ $totalApplications }} Applications Applied</span>
+                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">2 modules</span>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            <x-dashboard.module-card :href="route('admin.applications.dashboard')" icon="clipboard-check" name="Applications" owner="Registrar Office" summary="Enrollment, review, requirements, approvals" accent="emerald" shape="soft" />
+            <x-dashboard.module-card :href="route('admin.applications.dashboard')" icon="clipboard-check" name="Applications" owner="Registrar Office" summary="Enrollment, review, requirements, approvals ({{ $totalApplications }} applied)" accent="emerald" shape="soft" />
             <x-dashboard.module-card :href="route('admin.students.index')" icon="users" name="Students" owner="Records Office" summary="Records, profiles, history, documents" accent="violet" shape="arch" />
             {{-- Commented out for live production cleanup --}}
             {{--
@@ -214,6 +218,27 @@
                 <x-dashboard.quick-action :href="route('admin.enrollment.reports')" icon="bar-chart-3" label="Reports" meta="Open enrollment reporting" />
                 --}}
             </div>
+
+            <!-- Storage Usage -->
+            @if (isset($storageStats))
+            <div class="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700">
+                <div class="flex items-center gap-2 mb-3">
+                    <i data-lucide="hard-drive" class="w-4 h-4 text-slate-500"></i>
+                    <h3 class="text-sm font-semibold text-slate-800">Server Storage</h3>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                    <div class="h-3 rounded-full transition-all duration-500 {{ $storageStats['percent'] > 80 ? 'bg-red-500' : ($storageStats['percent'] > 60 ? 'bg-amber-500' : 'bg-emerald-500') }}" style="width: {{ min($storageStats['percent'], 100) }}%"></div>
+                </div>
+                <div class="mt-2 flex justify-between text-xs text-slate-500">
+                    <span>{{ number_format($storageStats['used'] / 1073741824, 1) }} GB used</span>
+                    <span>{{ number_format($storageStats['total'] / 1073741824, 0) }} GB total</span>
+                </div>
+                <div class="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                    <i data-lucide="folder" class="w-3 h-3"></i>
+                    <span>Documents: {{ number_format($storageStats['documents'] / 1048576, 1) }} MB</span>
+                </div>
+            </div>
+            @endif
         </aside>
     </section>
 </x-admin-layout>

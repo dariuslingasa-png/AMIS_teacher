@@ -52,6 +52,51 @@
         </div>
 
         <div class="px-6 py-5">
+            <!-- Applications Metrics Tracking Panel -->
+            <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-5">
+                <!-- Approved Card -->
+                <div class="group relative overflow-hidden rounded-xl border border-emerald-100 bg-emerald-50/30 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-50/50 hover:shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-600">Approved Applications</span>
+                            <h3 class="mt-2 text-3xl font-black tracking-tight text-emerald-950">{{ number_format($approvedCount) }}</h3>
+                        </div>
+                        <div class="rounded-lg bg-emerald-100/80 p-3 text-emerald-700 transition-transform duration-300 group-hover:scale-110">
+                            <i data-lucide="check-circle-2" class="h-6 w-6"></i>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 w-full bg-emerald-500/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                </div>
+
+                <!-- Review Queue Card -->
+                <div class="group relative overflow-hidden rounded-xl border border-blue-100 bg-blue-50/30 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-50/50 hover:shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-extrabold uppercase tracking-wider text-blue-600">Review Queue</span>
+                            <h3 class="mt-2 text-3xl font-black tracking-tight text-blue-950">{{ number_format($reviewQueueCount) }}</h3>
+                        </div>
+                        <div class="rounded-lg bg-blue-100/80 p-3 text-blue-700 transition-transform duration-300 group-hover:scale-110">
+                            <i data-lucide="clock-4" class="h-6 w-6"></i>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 w-full bg-blue-500/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                </div>
+
+                <!-- Rejected Card -->
+                <div class="group relative overflow-hidden rounded-xl border border-rose-100 bg-rose-50/30 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:bg-rose-50/50 hover:shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-extrabold uppercase tracking-wider text-rose-600">Rejected Applications</span>
+                            <h3 class="mt-2 text-3xl font-black tracking-tight text-rose-950">{{ number_format($rejectedCount) }}</h3>
+                        </div>
+                        <div class="rounded-lg bg-rose-100/80 p-3 text-rose-700 transition-transform duration-300 group-hover:scale-110">
+                            <i data-lucide="x-circle" class="h-6 w-6"></i>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 h-1 w-full bg-rose-500/80 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+                </div>
+            </div>
+
             <form method="GET" class="mb-5 grid grid-cols-12 gap-3">
                 <label class="relative col-span-4">
                     <i data-lucide="search" class="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400"></i>

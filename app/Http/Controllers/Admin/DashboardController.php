@@ -61,6 +61,7 @@ class DashboardController extends Controller
             'schoolYear' => $schoolYear,
             'dashboardKpis' => $this->kpis(),
             'dashboardCharts' => $this->charts($gradeCounts),
+            'storageStats' => $this->storageStats(),
         ]);
     }
 
@@ -187,5 +188,31 @@ class DashboardController extends Controller
         }
 
         return round((($current - $previous) / $previous) * 100, 1);
+    }
+
+    private function storageStats(): array
+    {
+        $storagePath = storage_path('app/public');
+        $totalDisk = disk_total_space(base_path());
+        $freeDisk = disk_free_space(base_path());
+        $usedDisk = $totalDisk - $freeDisk;
+
+        // Calculate documents folder size
+        $documentsPath = storage_path('app/public/documents');
+        $documentsSize = 0;
+        if (is_dir($documentsPath)) {
+            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($documentsPath, \FilesystemIterator::SKIP_DOTS));
+            foreach ($iterator as $file) {
+                $documentsSize += $file->getSize();
+            }
+        }
+
+        return [
+            'total' => $totalDisk,
+            'used' => $usedDisk,
+            'free' => $freeDisk,
+            'documents' => $documentsSize,
+            'percent' => round(($usedDisk / $totalDisk) * 100, 1),
+        ];
     }
 }

@@ -80,6 +80,9 @@ class ApplicantController extends Controller
             'statusBadges' => EnrollmentReviewService::STATUS_BADGES,
             'pmLabels' => EnrollmentReviewService::PAYMENT_LABELS,
             'pmBadges' => EnrollmentReviewService::PAYMENT_BADGES,
+            'approvedCount' => EnrollmentApplicant::where('status', 'approved')->count(),
+            'reviewQueueCount' => EnrollmentApplicant::whereIn('status', ['ready_for_submission', 'pending', 'submitted', 'under_review'])->count(),
+            'rejectedCount' => EnrollmentApplicant::where('status', 'rejected')->count(),
         ];
     }
 
