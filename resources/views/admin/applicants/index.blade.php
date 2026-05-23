@@ -45,7 +45,7 @@
                     <h1 class="text-xl font-bold text-slate-950">Applications</h1>
                     <p class="mt-1 text-sm text-slate-500">Family enrollment registry grouped by child applicants</p>
                 </div>
-                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700" data-total-count="{{ $applicants->total() ?? 0 }}">
+                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700" data-total-count="{{ $families->total() }}">
                     {{ number_format($families->total()) }} families
                 </span>
             </div>
@@ -250,10 +250,10 @@
 
     <script>
         (function() {
-            let lastCount = {{ $applicants->total() ?? 0 }};
+            let lastCount = {{ $families->total() ?? 0 }};
             setInterval(async () => {
                 try {
-                    const res = await fetch('{{ route("admin.applications.enrollment") }}?_count=1', {
+                    const res = await fetch(window.location.href, {
                         headers: { 'X-Requested-With': 'XMLHttpRequest' }
                     });
                     const text = await res.text();
