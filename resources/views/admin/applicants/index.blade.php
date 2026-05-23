@@ -45,7 +45,7 @@
                     <h1 class="text-xl font-bold text-slate-950">Applications</h1>
                     <p class="mt-1 text-sm text-slate-500">Family enrollment registry grouped by child applicants</p>
                 </div>
-                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700" data-total-count="{{ $applicants->total() ?? 0 }}">
                     {{ number_format($families->total()) }} families
                 </span>
             </div>
@@ -237,4 +237,38 @@
             </div>
         </div>
     </section>
+
+    <!-- New applicant polling notification -->
+    <div id="new-applicant-banner" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 hidden">
+        <div class="flex items-center gap-3 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg">
+            <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+            <span class="text-sm font-semibold" id="new-applicant-text">New applications received</span>
+            <button onclick="location.reload()" class="ml-2 bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-xs font-bold transition">Refresh</button>
+            <button onclick="document.getElementById('new-applicant-banner').classList.add('hidden')" class="ml-1 text-white/70 hover:text-white text-lg leading-none">&times;</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            let lastCount = {{ $applicants->total() ?? 0 }};
+            setInterval(async () => {
+                try {
+                    const res = await fetch('{{ route("admin.applications.enrollment") }}?_count=1', {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    const text = await res.text();
+                    const match = text.match(/data-total-count="(\d+)"/);
+                    if (match) {
+                        const newCount = parseInt(match[1]);
+                        if (newCount > lastCount) {
+                            const diff = newCount - lastCount;
+                            document.getElementById('new-applicant-text').textContent = diff + ' new application' + (diff > 1 ? 's' : '') + ' received';
+                            document.getElementById('new-applicant-banner').classList.remove('hidden');
+                            lastCount = newCount;
+                        }
+                    }
+                } catch(e) {}
+            }, 30000);
+        })();
+    </script>
 </x-admin-layout>
