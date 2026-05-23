@@ -222,20 +222,27 @@
             <!-- Storage Usage -->
             @if (isset($storageStats))
             <div class="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700">
-                <div class="flex items-center gap-2 mb-3">
-                    <i data-lucide="hard-drive" class="w-4 h-4 text-slate-500"></i>
-                    <h3 class="text-sm font-semibold text-slate-800">Server Storage</h3>
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="hard-drive" class="w-4 h-4 text-slate-500"></i>
+                        <h3 class="text-sm font-semibold text-slate-800">Server Storage</h3>
+                    </div>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-{{ $storageStats['healthColor'] }}-50 text-{{ $storageStats['healthColor'] }}-700">
+                        <span class="w-1.5 h-1.5 rounded-full bg-{{ $storageStats['healthColor'] }}-500"></span>
+                        {{ $storageStats['health'] }}
+                    </span>
                 </div>
                 <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                    <div class="h-3 rounded-full transition-all duration-500 {{ $storageStats['percent'] > 80 ? 'bg-red-500' : ($storageStats['percent'] > 60 ? 'bg-amber-500' : 'bg-emerald-500') }}" style="width: {{ min($storageStats['percent'], 100) }}%"></div>
+                    <div class="h-3 rounded-full transition-all duration-500 bg-{{ $storageStats['healthColor'] }}-500" style="width: {{ min($storageStats['percent'], 100) }}%"></div>
                 </div>
                 <div class="mt-2 flex justify-between text-xs text-slate-500">
                     <span>{{ number_format($storageStats['used'] / 1073741824, 1) }} GB used</span>
                     <span>{{ number_format($storageStats['total'] / 1073741824, 0) }} GB total</span>
                 </div>
+                <div class="mt-1 text-xs text-slate-400">{{ number_format($storageStats['free'] / 1073741824, 0) }} GB free ({{ 100 - $storageStats['percent'] }}%)</div>
                 <div class="mt-2 flex items-center gap-2 text-xs text-slate-500">
                     <i data-lucide="folder" class="w-3 h-3"></i>
-                    <span>Documents: {{ number_format($storageStats['documents'] / 1048576, 1) }} MB</span>
+                    <span>Documents: {{ $storageStats['documents'] > 1048576 ? number_format($storageStats['documents'] / 1048576, 1).' MB' : number_format($storageStats['documents'] / 1024, 1).' KB' }}</span>
                 </div>
             </div>
             @endif

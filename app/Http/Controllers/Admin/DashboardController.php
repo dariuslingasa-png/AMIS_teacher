@@ -192,27 +192,32 @@ class DashboardController extends Controller
 
     private function storageStats(): array
     {
-        $storagePath = storage_path('app/public');
         $totalDisk = disk_total_space(base_path());
         $freeDisk = disk_free_space(base_path());
         $usedDisk = $totalDisk - $freeDisk;
 
-        // Calculate documents folder size
-        $documentsPath = storage_path('app/public/documents');
+        // Check enrollment documents storage (symlinked or direct)
+        $documentsPath = public_path('storage/documents');
         $documentsSize = 0;
         if (is_dir($documentsPath)) {
             $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($documentsPath, \FilesystemIterator::SKIP_DOTS));
             foreach ($iterator as $file) {
-                $documentsSize += $file->getSize();
+                if ($file->isFile()) {
+                    $documentsSize += $file->getSize();
+                }
             }
         }
+
+        $percent = round(($usedDisk / $totalDisk) * 100, 1);
 
         return [
             'total' => $totalDisk,
             'used' => $usedDisk,
             'free' => $freeDisk,
             'documents' => $documentsSize,
-            'percent' => round(($usedDisk / $totalDisk) * 100, 1),
+            'percent' => $percent,
+            'health' => $percent < 60 ? 'Healthy' : ($percent < 80 ? 'Warning' : 'Critical'),
+            'healthColor' => $percent < 60 ? 'emerald' : ($percent < 80 ? 'amber' : 'red'),
         ];
     }
 }
