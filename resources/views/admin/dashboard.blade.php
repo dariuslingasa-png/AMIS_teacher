@@ -221,6 +221,14 @@
 
             <!-- Storage Usage -->
             @if (isset($storageStats))
+            @php
+                $formatBytes = function($bytes) {
+                    if ($bytes >= 1099511627776) return number_format($bytes / 1099511627776, 1) . 'TB';
+                    if ($bytes >= 1073741824) return number_format($bytes / 1073741824, 1) . 'GB';
+                    if ($bytes >= 1048576) return number_format($bytes / 1048576, 1) . 'MB';
+                    return number_format($bytes / 1024, 1) . 'KB';
+                };
+            @endphp
             <div class="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
@@ -236,13 +244,13 @@
                     <div class="h-3 rounded-full transition-all duration-500 bg-{{ $storageStats['healthColor'] }}-500" style="width: {{ min($storageStats['percent'], 100) }}%"></div>
                 </div>
                 <div class="mt-2 flex justify-between text-xs text-slate-500">
-                    <span>{{ number_format($storageStats['used'] / 1073741824, 1) }} GB used</span>
-                    <span>{{ number_format($storageStats['total'] / 1073741824, 0) }} GB total</span>
+                    <span>{{ $formatBytes($storageStats['used']) }} used</span>
+                    <span>{{ $formatBytes($storageStats['total']) }} total</span>
                 </div>
-                <div class="mt-1 text-xs text-slate-400">{{ number_format($storageStats['free'] / 1073741824, 0) }} GB free ({{ 100 - $storageStats['percent'] }}%)</div>
+                <div class="mt-1 text-xs text-slate-400">{{ $formatBytes($storageStats['free']) }} free ({{ 100 - $storageStats['percent'] }}%)</div>
                 <div class="mt-2 flex items-center gap-2 text-xs text-slate-500">
                     <i data-lucide="folder" class="w-3 h-3"></i>
-                    <span>Documents: {{ $storageStats['documents'] > 1048576 ? number_format($storageStats['documents'] / 1048576, 1).' MB' : number_format($storageStats['documents'] / 1024, 1).' KB' }}</span>
+                    <span>Documents: {{ $formatBytes($storageStats['documents']) }}</span>
                 </div>
             </div>
             @endif
