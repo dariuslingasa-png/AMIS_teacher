@@ -1,0 +1,133 @@
+@php
+    $inputClass = 'h-11 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100';
+    $msSyncColor = ['enrolled' => 'green', 'failed' => 'red', 'pending' => 'yellow'];
+    $msSyncLabel = ['enrolled' => 'Synced', 'failed' => 'Sync Failed', 'pending' => 'Pending Teams'];
+@endphp
+
+<x-admin-layout
+    title="Student Records"
+    :breadcrumbs="[
+        ['label' => 'Students', 'href' => route('admin.students.index')],
+        ['label' => 'Student Records', 'href' => null],
+    ]"
+>
+    <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
+        <!-- Section Header -->
+        <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
+            <div>
+                <p class="text-xs font-extrabold uppercase tracking-wider text-emerald-700">Students Workspace</p>
+                <h1 class="mt-1 text-xl font-bold text-slate-950">Student Records</h1>
+                <p class="mt-1 text-sm text-slate-500">View enrolled student accounts, credentials, and synchronized teams channels.</p>
+            </div>
+            <a href="{{ route('admin.dashboard') }}" class="inline-flex h-10 items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100">
+                <i data-lucide="layout-dashboard" class="h-4 w-4"></i>
+                Dashboard
+            </a>
+        </div>
+
+        <div class="px-6 py-5">
+            <!-- Filter Bar Form -->
+            <form method="GET" class="mb-5 grid grid-cols-12 gap-3">
+                <label class="relative col-span-5">
+                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400"></i>
+                    <input name="search" value="{{ request('search') }}" placeholder="Search name, student number, or email" class="{{ $inputClass }} w-full pl-9">
+                </label>
+                <select name="grade" class="{{ $inputClass }} col-span-2 w-full" onchange="this.form.submit()">
+                    <option value="">All grades</option>
+                    @foreach(['Kinder 1', 'Kinder 2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'] as $g)
+                        <option value="{{ $g }}" @selected(request('grade') === $g)>{{ $g }}</option>
+                    @endforeach
+                </select>
+                <select name="mode" class="{{ $inputClass }} col-span-3 w-full" onchange="this.form.submit()">
+                    <option value="">All learning modes</option>
+                    <option value="Face-to-Face" @selected(request('mode') === 'Face-to-Face')>Face-to-Face</option>
+                    <option value="Flexible" @selected(request('mode') === 'Flexible')>Flexible Online Learning</option>
+                </select>
+                <button class="col-span-2 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800">
+                    <i data-lucide="filter" class="h-4 w-4"></i>
+                    Filter
+                </button>
+            </form>
+
+            <!-- Table Wrapper -->
+            <div class="overflow-hidden rounded-md border border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th class="px-5 py-4 font-bold">Student</th>
+                            <th class="w-36 px-5 py-4 font-bold">Student ID</th>
+                            <th class="w-44 px-5 py-4 font-bold">Academic Profile</th>
+                            <th class="w-48 px-5 py-4 font-bold">School Email</th>
+                            <th class="w-40 px-5 py-4 font-bold">MS Sync State</th>
+                            <th class="w-36 px-5 py-4 text-right font-bold">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white">
+                        @forelse ($students as $student)
+                            @php
+                                $fullName = trim(($student->applicant->first_name ?? '').' '.($student->applicant->middle_name ?? '').' '.($student->applicant->last_name ?? ''));
+                                $name = $fullName ? \Illuminate\Support\Str::upper($fullName) : 'STUDENT PROFILE';
+                                $initials = collect(explode(' ', $name))->filter()->take(2)->map(fn ($part) => \Illuminate\Support\Str::substr($part, 0, 1))->join('');
+                                $msStatus = $student->studentSection->ms_status ?? 'pending';
+                            @endphp
+                            <tr class="transition hover:bg-slate-50">
+                                <!-- Student Initials & Name -->
+                                <td class="px-5 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <span class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-emerald-50 text-xs font-extrabold text-emerald-700 ring-1 ring-emerald-100">{{ $initials ?: 'ST' }}</span>
+                                        <div>
+                                            <div class="font-extrabold text-slate-950">{{ $name }}</div>
+                                            <div class="mt-0.5 text-xs font-medium text-slate-500">SY {{ $student->school_year ?? '-' }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- Student Number -->
+                                <td class="px-5 py-4 font-extrabold text-slate-600">
+                                    {{ $student->student_number ?? '-' }}
+                                </td>
+
+                                <!-- Grade Level & Section -->
+                                <td class="px-5 py-4">
+                                    <div class="font-bold text-slate-700">{{ $student->grade_level ?? '-' }}</div>
+                                    <div class="mt-0.5 text-xxs font-semibold uppercase text-slate-400">
+                                        {{ $student->studentSection->section->name ?? 'No Section' }}
+                                    </div>
+                                </td>
+
+                                <!-- School Email -->
+                                <td class="px-5 py-4 font-medium text-slate-600">
+                                    {{ $student->school_email ?? '-' }}
+                                </td>
+
+                                <!-- MS Sync status -->
+                                <td class="px-5 py-4">
+                                    <x-badge :color="$msSyncColor[$msStatus] ?? 'gray'">
+                                        {{ $msSyncLabel[$msStatus] ?? 'Pending' }}
+                                    </x-badge>
+                                </td>
+
+                                <!-- Action -->
+                                <td class="px-5 py-4 text-right">
+                                    <a href="{{ route('admin.students.show', $student) }}" class="inline-flex h-9 items-center gap-2 rounded-md border border-emerald-100 bg-white px-3 text-xs font-bold text-emerald-700 transition hover:bg-emerald-50">
+                                        <i data-lucide="file-search" class="h-4 w-4"></i>
+                                        Manage
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="px-5 py-12 text-center text-sm text-slate-500">
+                                    No enrolled students found.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination links -->
+            <div class="mt-5">{{ $students->links() }}</div>
+        </div>
+    </section>
+</x-admin-layout>

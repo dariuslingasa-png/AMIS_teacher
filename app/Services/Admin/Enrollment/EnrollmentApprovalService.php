@@ -1,0 +1,242 @@
+<?php
+
+namespace App\Services\Admin\Enrollment;
+
+use App\Models\EnrollmentApplicant;
+use App\Models\Student;
+use App\Services\MicrosoftGraphService;
+use App\Services\MsTeamsEnrollmentService;
+use App\Services\SoaService;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+class EnrollmentApprovalService
+{
+    public function __construct(
+        private readonly EnrollmentReviewService $reviewService,
+    ) {}
+
+    public function approve(EnrollmentApplicant $applicant): string
+    {
+        $applicant->loadMissing('payment', 'student');
+        $this->reviewService->assertReadyForApproval($applicant);
+
+        if ($applicant->student) {
+            return 'Student already onboarded.';
+        }
+
+        $studentNumber = $this->generateStudentNumber();
+        [$mailNick, $schoolEmail] = $this->generateSchoolEmail($applicant, $studentNumber);
+        $tempPassword = 'Amis@'.strtoupper(Str::random(5)).rand(10, 99);
+
+        [$msUserId, $msError, $graph] = $this->createMicrosoftAccount($applicant, $mailNick, $schoolEmail, $tempPassword);
+        $student = $this->createStudent($applicant, $studentNumber, $schoolEmail, $msUserId, $tempPassword);
+
+        $this->enrollInTeams($student, $msUserId, $graph);
+        $this->generateSoa($student, $applicant);
+
+        $applicant->update([
+            'status' => 'approved',
+            'review_remarks' => null,
+        ]);
+
+        $this->sendOnboardingIfPossible($applicant, $student, $tempPassword, $msError);
+
+        return $msError
+            ? 'Application approved. Student number generated. Note: Microsoft account creation failed. Please create it manually. Error: '.$msError
+            : 'Application approved. Student credentials were generated and sent to the parent.';
+    }
+
+    private function generateStudentNumber(): string
+    {
+        $year = substr(date('Y'), 2);
+        $sequence = Student::whereYear('created_at', date('Y'))->count() + 1;
+
+        do {
+            $studentNumber = $year.str_pad($sequence, 4, '0', STR_PAD_LEFT);
+            $sequence++;
+        } while (Student::where('student_number', $studentNumber)->exists());
+
+        return $studentNumber;
+    }
+
+    private function generateSchoolEmail(EnrollmentApplicant $applicant, string $studentNumber): array
+    {
+        $lastName = strtolower(preg_replace('/\s+/', '', (string) $applicant->last_name));
+        $mailNick = $studentNumber.$lastName;
+        $schoolEmail = $mailNick.'@amis.edu.ph';
+        $suffix = 1;
+
+        while (Student::where('school_email', $schoolEmail)->exists()) {
+            $mailNick = $studentNumber.$lastName.$suffix;
+            $schoolEmail = $mailNick.'@amis.edu.ph';
+            $suffix++;
+        }
+
+        return [$mailNick, $schoolEmail];
+    }
+
+    private function createMicrosoftAccount(
+        EnrollmentApplicant $applicant,
+        string $mailNick,
+        string $schoolEmail,
+        string $tempPassword,
+    ): array {
+        $graph = new MicrosoftGraphService();
+
+        try {
+            $displayName = trim($applicant->first_name.' '.$applicant->last_name);
+            $msUser = $graph->createUser($displayName, $mailNick, $schoolEmail, $tempPassword);
+
+            return [$msUser['id'] ?? null, null, $graph];
+        } catch (\Throwable $exception) {
+            $message = $exception->getMessage();
+            Log::error('Microsoft Graph error for applicant '.$applicant->id.': '.$message);
+
+            return [null, $message, $graph];
+        }
+    }
+
+    private function createStudent(
+        EnrollmentApplicant $applicant,
+        string $studentNumber,
+        string $schoolEmail,
+        ?string $msUserId,
+        string $tempPassword,
+    ): Student {
+        return Student::create([
+            'user_id' => $applicant->user_id,
+            'enrollment_applicant_id' => $applicant->id,
+            'student_number' => $studentNumber,
+            'school_email' => $schoolEmail,
+            'ms_email' => $schoolEmail,
+            'ms_user_id' => $msUserId,
+            'ms_account_created_at' => $msUserId ? now() : null,
+            'temp_password' => Hash::make($tempPassword),
+            'grade_level' => $applicant->grade_level,
+            'school_year' => $applicant->school_year,
+            'credentials_sent_at' => now(),
+        ]);
+    }
+
+    private function enrollInTeams(Student $student, ?string $msUserId, MicrosoftGraphService $graph): void
+    {
+        if (! $msUserId) {
+            return;
+        }
+
+        try {
+            $teamsResult = (new MsTeamsEnrollmentService($graph))->enrollStudent($student);
+
+            if (($teamsResult['failed'] ?? 0) > 0) {
+                Log::warning("Teams enrollment partial failure for {$student->student_number}", $teamsResult['errors'] ?? []);
+            }
+        } catch (\Throwable $exception) {
+            Log::error('Teams enrollment failed for '.$student->student_number.': '.$exception->getMessage());
+        }
+    }
+
+    private function generateSoa(Student $student, EnrollmentApplicant $applicant): void
+    {
+        try {
+            (new SoaService())->generate($student, $applicant);
+        } catch (\Throwable $exception) {
+            Log::error('SOA generation failed: '.$exception->getMessage());
+        }
+    }
+
+    private function sendOnboardingIfPossible(
+        EnrollmentApplicant $applicant,
+        Student $student,
+        string $tempPassword,
+        ?string $msError,
+    ): void {
+        $recipients = collect([$applicant->parent_email ?: null, $applicant->email ?: null])
+            ->filter(fn ($email) => $email && $email !== 'NA' && filter_var($email, FILTER_VALIDATE_EMAIL))
+            ->unique()
+            ->values();
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        $this->sendOnboardingEmail($applicant, $student, $tempPassword, $msError, $recipients->all());
+    }
+
+    private function sendOnboardingEmail(
+        EnrollmentApplicant $applicant,
+        Student $student,
+        string $tempPassword,
+        ?string $msError,
+        array $recipients,
+    ): void {
+        $studentName = trim($applicant->first_name.' '.$applicant->last_name);
+        $genderWord = strtolower((string) ($applicant->gender ?? 'male')) === 'female' ? 'daughter' : 'son';
+        $pronoun = $genderWord === 'son' ? 'him' : 'her';
+
+        $html = '
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Inter,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:40px 20px;">
+<tr><td align="center">
+<table width="540" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+    <tr><td style="background:linear-gradient(135deg,#059669,#047857);padding:36px 40px;text-align:center;">
+        <img src="'.asset('images/AMIS_Logo.png').'" alt="AMIS" width="64" height="64" style="margin-bottom:14px;border-radius:12px;">
+        <h1 style="color:#fff;font-size:22px;margin:0 0 4px;font-weight:800;">Al Munawwara Islamic School</h1>
+        <p style="color:rgba(255,255,255,0.85);font-size:13px;margin:0;">AMIS Enrollment Office</p>
+    </td></tr>
+    <tr><td style="padding:36px 40px;">
+        <p style="font-size:18px;font-weight:700;color:#059669;margin:0 0 6px;">Assalamualaikum Warahmatullahi Wabarakatuh,</p>
+        <p style="font-size:14px;color:#374151;margin:0 0 20px;">Dear Parent/Guardian of <strong>'.$studentName.'</strong>,</p>
+        <p style="font-size:14px;color:#374151;margin:0 0 20px;line-height:1.7;">
+            Alhamdulillah, the enrollment application of your <strong>'.$genderWord.'</strong>, <strong>'.$studentName.'</strong>, has been
+            <span style="color:#059669;font-weight:700;">officially approved</span> for <strong>School Year '.$applicant->school_year.'</strong>.
+            We warmly welcome '.$pronoun.' to the AMIS family.
+        </p>
+        <p style="font-size:14px;color:#374151;margin:0 0 20px;line-height:1.7;">Below are the school credentials for Microsoft 365 and the Student Portal:</p>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr><td style="padding:7px 0;font-size:13px;color:#6b7280;width:160px;">Student Number</td><td style="padding:7px 0;font-size:15px;font-weight:800;color:#059669;">'.$student->student_number.'</td></tr>
+                <tr><td style="padding:7px 0;font-size:13px;color:#6b7280;">Grade Level</td><td style="padding:7px 0;font-size:14px;font-weight:600;color:#111827;">'.$student->grade_level.'</td></tr>
+                <tr><td style="padding:7px 0;font-size:13px;color:#6b7280;">School Email</td><td style="padding:7px 0;font-size:14px;font-weight:600;color:#111827;">'.$student->school_email.'</td></tr>
+                <tr><td style="padding:7px 0;font-size:13px;color:#6b7280;">Temp Password</td><td style="padding:7px 0;font-size:14px;font-weight:700;color:#111827;letter-spacing:0.08em;background:#fef9c3;padding:4px 8px;border-radius:6px;">'.$tempPassword.'</td></tr>
+            </table>
+        </div>
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:14px 18px;margin-bottom:20px;">
+            <p style="font-size:13px;color:#9a3412;margin:0;font-weight:600;">Important reminders:</p>
+            <ul style="font-size:13px;color:#9a3412;margin:8px 0 0;padding-left:18px;line-height:1.8;">
+                <li>Please change the temporary password upon first login.</li>
+                <li>Use the school email to sign in to Microsoft Teams for online classes.</li>
+                <li>Keep these credentials safe and do not share them.</li>
+            </ul>
+        </div>
+        <p style="font-size:13px;color:#6b7280;margin:0 0 6px;">Sign in at: <a href="https://portal.office.com" style="color:#059669;font-weight:600;">portal.office.com</a></p>
+        '.($msError ? '<p style="color:#dc2626;font-size:12px;background:#fff1f2;padding:10px 14px;border-radius:8px;margin-top:12px;">Note: Microsoft account setup is still in progress. The school will notify you once it is ready.</p>' : '').'
+        <p style="font-size:14px;color:#374151;margin:24px 0 0;line-height:1.7;">May Allah bless your '.$genderWord.'\'s journey of learning. We look forward to a fruitful school year together.</p>
+        <p style="font-size:14px;color:#374151;margin:8px 0 0;font-weight:600;">Wassalamualaikum Warahmatullahi Wabarakatuh.</p>
+    </td></tr>
+    <tr><td style="background:#f9fafb;padding:20px 40px;text-align:center;border-top:1px solid #e5e7eb;">
+        <p style="color:#9ca3af;font-size:11px;margin:0 0 4px;font-weight:600;">Al Munawwara Islamic School</p>
+        <p style="color:#9ca3af;font-size:11px;margin:0;">&copy; '.date('Y').' All rights reserved.</p>
+    </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>';
+
+        try {
+            Mail::html($html, function ($message) use ($recipients, $studentName) {
+                $message->to($recipients)
+                    ->subject('AMIS Enrollment Approved for '.$studentName);
+            });
+        } catch (\Throwable $exception) {
+            Log::error('Failed to send onboarding email: '.$exception->getMessage());
+        }
+    }
+}
