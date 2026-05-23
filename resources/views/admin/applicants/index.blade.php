@@ -153,7 +153,7 @@
                                     <td class="px-5 py-4">
                                         <div class="flex items-center gap-3">
                                             @if ($photoUrl)
-                                                <img src="{{ $photoUrl }}" alt="{{ $childName }}" class="h-10 w-10 rounded-md border border-slate-200 object-cover">
+                                                <img src="{{ $photoUrl }}" alt="{{ $childName }}" loading="lazy" class="h-10 w-10 rounded-md border border-slate-200 object-cover">
                                             @else
                                                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-xs font-extrabold text-slate-600 ring-1 ring-slate-200">{{ $childInitials ?: 'ST' }}</span>
                                             @endif
