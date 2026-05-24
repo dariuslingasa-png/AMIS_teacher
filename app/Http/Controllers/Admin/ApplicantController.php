@@ -28,9 +28,16 @@ class ApplicantController extends Controller
             ->groupBy('grade_level')
             ->orderBy('grade_level')
             ->pluck('total', 'grade_level');
+
         $gradeSlots = $this->analyticsService->gradeSlotData($schoolYear, $gradeCounts);
-        $capacity = (int) $gradeSlots->sum('capacity');
-        $enrolled = (int) $gradeSlots->sum('enrolled');
+        $shiftSlots = $this->analyticsService->shiftSlotData($schoolYear);
+        $demandCounts = $this->analyticsService->learningModeDemandData($schoolYear);
+
+        $slotRows = $this->analyticsService->slotMatrixData($gradeSlots, $shiftSlots, $demandCounts);
+        $slotCollections = $slotRows->flatMap(fn ($row) => [$row['face_to_face'], $row['first_shift'], $row['second_shift']]);
+        $capacity = (int) $slotCollections->sum('capacity');
+        $enrolled = (int) $slotCollections->sum('enrolled');
+
         $available = max(0, $capacity - $enrolled);
         $utilization = $capacity > 0 ? min(100, round(($enrolled / $capacity) * 100)) : 0;
 
@@ -42,6 +49,7 @@ class ApplicantController extends Controller
             'approvedCount' => EnrollmentApplicant::where('status', 'approved')->count(),
             'capacityStats' => compact('capacity', 'enrolled', 'available', 'utilization'),
             'gradeSlots' => $gradeSlots,
+            'slotRows' => $slotRows,
             'applicationCharts' => $this->applicationCharts($gradeSlots),
         ]);
     }

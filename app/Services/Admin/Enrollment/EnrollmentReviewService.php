@@ -132,6 +132,23 @@ class EnrollmentReviewService
         $applicant->update(['document_statuses' => $statuses]);
     }
 
+    public function updateUploadedDocumentsStatus(Request $request, EnrollmentApplicant $applicant): void
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:approved,rejected,pending',
+        ]);
+
+        $statuses = $applicant->document_statuses ?? [];
+
+        foreach ($this->documentMap($applicant) as $key => $doc) {
+            if (in_array($key, self::REVIEWABLE_DOCUMENTS, true) && filled($doc['url'] ?? null)) {
+                $statuses[$key] = $validated['status'];
+            }
+        }
+
+        $applicant->update(['document_statuses' => $statuses]);
+    }
+
     public function updateDiscount(Request $request, EnrollmentApplicant $applicant): void
     {
         $validated = $request->validate([
@@ -163,17 +180,17 @@ class EnrollmentReviewService
     public function assertReadyForApproval(EnrollmentApplicant $applicant): void
     {
         if (!$this->areAllDocumentsApproved($applicant)) {
-            throw ValidationException::withMessages(['status' => 'Cannot approve: required documents must all be approved first.']);
+            throw ValidationException::withMessages(['status' => 'NOT ALLOW: documents must be approved before approval.']);
         }
 
         $applicant->loadMissing('payment');
 
         if (!$applicant->payment || blank($applicant->payment->receipt_url)) {
-            throw ValidationException::withMessages(['status' => 'Payment proof must be uploaded first.']);
+            throw ValidationException::withMessages(['status' => 'NOT ALLOW: payment proof must be uploaded before approval.']);
         }
 
         if ($applicant->payment->status !== 'verified') {
-            throw ValidationException::withMessages(['status' => 'Enrollment fee payment must be verified first.']);
+            throw ValidationException::withMessages(['status' => 'NOT ALLOW: payment proof must be verified before approval.']);
         }
     }
 
@@ -242,4 +259,3 @@ class EnrollmentReviewService
         }
     }
 }
-

@@ -15,6 +15,12 @@ class RequirementController extends Controller
 
     public function update(Request $request, EnrollmentApplicant $applicant)
     {
+        if ($request->input('doc_key') === 'uploaded_documents') {
+            $this->reviewService->updateUploadedDocumentsStatus($request, $applicant);
+
+            return back()->with('success', 'Uploaded documents status updated.');
+        }
+
         $this->reviewService->updateDocumentStatus($request, $applicant);
 
         return back()->with('success', 'Document status updated.');

@@ -66,21 +66,32 @@ class EnrollmentAnalyticsService
 
     public function gradeSlotData(string $schoolYear, Collection $gradeCounts): Collection
     {
-        if (!Schema::hasTable('grade_levels')) {
-            return $gradeCounts->map(fn ($count, $grade) => [
-                'grade' => $grade ?: 'Not Set',
-                'capacity' => 0,
-                'enrolled' => (int) $count,
-                'available' => 0,
-                'used_percent' => 0,
-                'status' => 'No slot config',
-            ])->values();
+        if (
+            !Schema::hasTable('grade_levels')
+            || !Schema::hasColumn('grade_levels', 'name')
+            || !Schema::hasColumn('grade_levels', 'capacity')
+            || !Schema::hasColumn('grade_levels', 'enrolled_count')
+        ) {
+            return $this->fallbackGradeRows($gradeCounts);
         }
 
-        return DB::table('grade_levels')
-            ->where('school_year', $schoolYear)
-            ->where('is_active', true)
-            ->orderBy('sort_order')
+        $query = DB::table('grade_levels');
+
+        if (Schema::hasColumn('grade_levels', 'school_year')) {
+            $query->where('school_year', $schoolYear);
+        }
+
+        if (Schema::hasColumn('grade_levels', 'is_active')) {
+            $query->where('is_active', true);
+        }
+
+        if (Schema::hasColumn('grade_levels', 'sort_order')) {
+            $query->orderBy('sort_order');
+        } else {
+            $query->orderBy('name');
+        }
+
+        $rows = $query
             ->get()
             ->map(function ($grade) use ($gradeCounts) {
                 $capacity = (int) $grade->capacity;
@@ -99,31 +110,76 @@ class EnrollmentAnalyticsService
                     'status' => $available <= 0 ? 'Full' : ($available <= 5 ? 'Limited' : 'Open'),
                 ];
             });
+
+        return $rows->isNotEmpty() ? $rows : $this->fallbackGradeRows($gradeCounts);
     }
 
     public function shiftSlotData(string $schoolYear): Collection
     {
-        if (!Schema::hasTable('grade_shift_slots') || !Schema::hasTable('grade_levels') || !Schema::hasTable('enrollment_shifts')) {
+        if (
+            !Schema::hasTable('grade_shift_slots')
+            || !Schema::hasTable('grade_levels')
+            || !Schema::hasTable('enrollment_shifts')
+            || !Schema::hasColumn('grade_shift_slots', 'grade_level_id')
+            || !Schema::hasColumn('grade_shift_slots', 'enrollment_shift_id')
+            || !Schema::hasColumn('grade_shift_slots', 'capacity')
+            || !Schema::hasColumn('grade_shift_slots', 'enrolled_count')
+            || !Schema::hasColumn('grade_levels', 'id')
+            || !Schema::hasColumn('grade_levels', 'name')
+            || !Schema::hasColumn('enrollment_shifts', 'id')
+            || !Schema::hasColumn('enrollment_shifts', 'name')
+        ) {
             return collect();
         }
 
-        return DB::table('grade_shift_slots as slots')
+        $query = DB::table('grade_shift_slots as slots')
             ->join('grade_levels as grades', 'grades.id', '=', 'slots.grade_level_id')
-            ->join('enrollment_shifts as shifts', 'shifts.id', '=', 'slots.enrollment_shift_id')
-            ->where('slots.school_year', $schoolYear)
-            ->where('slots.is_active', true)
-            ->where('grades.is_active', true)
-            ->where('shifts.is_active', true)
-            ->orderBy('grades.sort_order')
-            ->orderBy('shifts.start_time')
-            ->get([
+            ->join('enrollment_shifts as shifts', 'shifts.id', '=', 'slots.enrollment_shift_id');
+
+        if (Schema::hasColumn('grade_shift_slots', 'school_year')) {
+            $query->where('slots.school_year', $schoolYear);
+        }
+
+        if (Schema::hasColumn('grade_shift_slots', 'is_active')) {
+            $query->where('slots.is_active', true);
+        }
+
+        if (Schema::hasColumn('grade_levels', 'is_active')) {
+            $query->where('grades.is_active', true);
+        }
+
+        if (Schema::hasColumn('enrollment_shifts', 'is_active')) {
+            $query->where('shifts.is_active', true);
+        }
+
+        if (Schema::hasColumn('grade_levels', 'sort_order')) {
+            $query->orderBy('grades.sort_order');
+        } else {
+            $query->orderBy('grades.name');
+        }
+
+        if (Schema::hasColumn('enrollment_shifts', 'start_time')) {
+            $query->orderBy('shifts.start_time');
+        } else {
+            $query->orderBy('shifts.name');
+        }
+
+        $columns = [
                 'grades.name as grade',
                 'shifts.name as shift',
-                'shifts.start_time',
-                'shifts.end_time',
                 'slots.capacity',
                 'slots.enrolled_count',
-            ])
+        ];
+
+        if (Schema::hasColumn('enrollment_shifts', 'start_time')) {
+            $columns[] = 'shifts.start_time';
+        }
+
+        if (Schema::hasColumn('enrollment_shifts', 'end_time')) {
+            $columns[] = 'shifts.end_time';
+        }
+
+        return $query->get($columns)
             ->map(function ($slot) {
                 $capacity = (int) $slot->capacity;
                 $enrolled = (int) $slot->enrolled_count;
@@ -132,7 +188,9 @@ class EnrollmentAnalyticsService
                 return [
                     'grade' => $slot->grade,
                     'shift' => $slot->shift,
-                    'time' => substr((string) $slot->start_time, 0, 5).' - '.substr((string) $slot->end_time, 0, 5),
+                    'time' => isset($slot->start_time, $slot->end_time)
+                        ? substr((string) $slot->start_time, 0, 5).' - '.substr((string) $slot->end_time, 0, 5)
+                        : null,
                     'capacity' => $capacity,
                     'enrolled' => $enrolled,
                     'available' => $available,
@@ -142,19 +200,50 @@ class EnrollmentAnalyticsService
             });
     }
 
-    public function slotMatrixData(Collection $gradeSlots, Collection $shiftSlots): Collection
+    public function learningModeDemandData(string $schoolYear): Collection
+    {
+        $query = EnrollmentApplicant::select('grade_level', 'learning_mode', DB::raw('COUNT(*) as total'))
+            ->whereNotIn('status', ['draft'])
+            ->whereNotNull('grade_level');
+
+        if (Schema::hasColumn('enrollment_applicants', 'school_year')) {
+            $query->where('school_year', $schoolYear);
+        }
+
+        return $query
+            ->groupBy('grade_level', 'learning_mode')
+            ->get()
+            ->groupBy('grade_level')
+            ->map(function (Collection $rows) {
+                return [
+                    'face_to_face' => (int) $rows
+                        ->filter(fn ($row) => (string) $row->learning_mode === 'Face-to-Face')
+                        ->sum('total'),
+                    'first_shift' => (int) $rows
+                        ->filter(fn ($row) => str_contains((string) $row->learning_mode, '1st Shift'))
+                        ->sum('total'),
+                    'second_shift' => (int) $rows
+                        ->filter(fn ($row) => str_contains((string) $row->learning_mode, '2nd Shift'))
+                        ->sum('total'),
+                ];
+            });
+    }
+
+    public function slotMatrixData(Collection $gradeSlots, Collection $shiftSlots, ?Collection $demandCounts = null): Collection
     {
         $shiftGroups = $shiftSlots->groupBy('grade');
+        $demandCounts ??= collect();
 
-        return $gradeSlots->map(function (array $gradeSlot) use ($shiftGroups) {
+        return $gradeSlots->map(function (array $gradeSlot) use ($shiftGroups, $demandCounts) {
             $gradeShifts = $shiftGroups->get($gradeSlot['grade'], collect());
+            $gradeDemand = $demandCounts->get($gradeSlot['grade'], []);
 
             return [
                 'grade' => $gradeSlot['grade'],
                 'applicant_count' => $gradeSlot['applicant_count'] ?? 0,
-                'face_to_face' => $gradeSlot,
-                'first_shift' => $this->findShiftSlot($gradeShifts, 'first'),
-                'second_shift' => $this->findShiftSlot($gradeShifts, 'second'),
+                'face_to_face' => $this->withDemand($gradeSlot, (int) ($gradeDemand['face_to_face'] ?? 0)),
+                'first_shift' => $this->withDemand($this->findShiftSlot($gradeShifts, 'first'), (int) ($gradeDemand['first_shift'] ?? 0)),
+                'second_shift' => $this->withDemand($this->findShiftSlot($gradeShifts, 'second'), (int) ($gradeDemand['second_shift'] ?? 0)),
             ];
         });
     }
@@ -180,5 +269,25 @@ class EnrollmentAnalyticsService
             'used_percent' => 0,
             'status' => 'No slot config',
         ];
+    }
+
+    private function withDemand(array $slot, int $applicants): array
+    {
+        $slot['applicants'] = $applicants;
+
+        return $slot;
+    }
+
+    private function fallbackGradeRows(Collection $gradeCounts): Collection
+    {
+        return $gradeCounts->map(fn ($count, $grade) => [
+            'grade' => $grade ?: 'Not Set',
+            'capacity' => 0,
+            'enrolled' => 0,
+            'available' => 0,
+            'used_percent' => 0,
+            'applicant_count' => (int) $count,
+            'status' => 'No slot config',
+        ])->values();
     }
 }

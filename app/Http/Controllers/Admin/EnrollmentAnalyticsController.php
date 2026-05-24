@@ -43,7 +43,8 @@ class EnrollmentAnalyticsController extends Controller
         $cityCounts = $this->analyticsService->locationCounts('city');
         $gradeSlots = $this->analyticsService->gradeSlotData($schoolYear, $gradeCounts);
         $shiftSlots = $this->analyticsService->shiftSlotData($schoolYear);
-        $slotRows = $this->analyticsService->slotMatrixData($gradeSlots, $shiftSlots);
+        $demandCounts = $this->analyticsService->learningModeDemandData($schoolYear);
+        $slotRows = $this->analyticsService->slotMatrixData($gradeSlots, $shiftSlots, $demandCounts);
 
         $slotTotals = [
             'capacity' => $slotRows->sum(fn ($row) => collect([$row['face_to_face'], $row['first_shift'], $row['second_shift']])->sum('capacity')),

@@ -37,20 +37,6 @@
         @if ($assetUrl)
             <div class="mt-3 flex gap-2">
                 <a href="{{ $assetUrl }}" target="_blank" class="doc-action doc-action-view">Open</a>
-                <form method="POST" action="{{ route('admin.applicants.document', $applicant) }}">
-                    @csrf
-                    @method('PATCH')
-                    <input type="hidden" name="doc_key" value="{{ $docKey }}">
-                    <input type="hidden" name="status" value="approved">
-                    <button class="doc-action doc-action-approve">Approve</button>
-                </form>
-                <form method="POST" action="{{ route('admin.applicants.document', $applicant) }}">
-                    @csrf
-                    @method('PATCH')
-                    <input type="hidden" name="doc_key" value="{{ $docKey }}">
-                    <input type="hidden" name="status" value="rejected">
-                    <button class="doc-action doc-action-reject">Reject</button>
-                </form>
             </div>
         @endif
     </div>

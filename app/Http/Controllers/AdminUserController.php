@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AdminUserController extends Controller
 {
@@ -14,7 +15,13 @@ class AdminUserController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('admin.admins.index', compact('admins'));
+        $stats = [
+            'total' => $admins->count(),
+            'verified' => $admins->where('account_status', 'verified')->count(),
+            'current' => auth()->user(),
+        ];
+
+        return view('admin.admins.index', compact('admins', 'stats'));
     }
 
     public function store(Request $request)
@@ -28,7 +35,7 @@ class AdminUserController extends Controller
         User::create([
             'name'              => $request->name,
             'email'             => $request->email,
-            'username'          => strtolower(str_replace(' ', '.', $request->name)),
+            'username'          => $this->uniqueUsername($request->name),
             'password'          => Hash::make($request->password),
             'role'              => 'admin',
             'account_status'    => 'verified',
@@ -50,5 +57,19 @@ class AdminUserController extends Controller
 
         $user->delete();
         return back()->with('success', "Admin account removed.");
+    }
+
+    private function uniqueUsername(string $name): string
+    {
+        $base = Str::of($name)->lower()->slug('.')->value() ?: 'admin';
+        $username = $base;
+        $counter = 2;
+
+        while (User::where('username', $username)->exists()) {
+            $username = "{$base}.{$counter}";
+            $counter++;
+        }
+
+        return $username;
     }
 }

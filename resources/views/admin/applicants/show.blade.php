@@ -11,6 +11,19 @@
     $photoUrl = $applicant->photo_2x2_url ? asset('storage/'.$applicant->photo_2x2_url) : null;
     $paymentUrl = $payment?->receipt_url ? asset('storage/'.$payment->receipt_url) : null;
     $paymentIsPdf = $payment?->receipt_url && strtolower(pathinfo($payment->receipt_url, PATHINFO_EXTENSION)) === 'pdf';
+    $paymentReadinessLabel = match (true) {
+        !$payment?->receipt_url => 'Waiting for Verification (Sir Cabel)',
+        $payment->status === 'verified' && $applicant->status === 'approved' => 'Approved by Sir Cabel',
+        $payment->status === 'verified' => 'Verified by Sir Cabel',
+        $payment->status === 'rejected' => 'Rejected by Sir Cabel ❌',
+        default => 'Waiting for Verification (Sir Cabel)',
+    };
+    $approvalReadinessLabel = match (true) {
+        $applicant->status === 'approved' && $allDocsOk && $paymentOk => 'Enrollment Approved ✅',
+        $payment?->status === 'rejected' => 'Enrollment On Hold / Payment Rejected',
+        $canApprove => 'Ready for Approval / Under Review',
+        default => 'Not Ready for Enrollment / Pending',
+    };
     $currentStatus = $applicant->status ?? 'under_review';
     $currentStatusLabel = $statusLabels[$currentStatus] ?? Str::headline($currentStatus);
     $fatherName = trim(($applicant->father_first_name ?? '').' '.($applicant->father_middle_name ?? '').' '.($applicant->father_last_name ?? ''));
@@ -196,6 +209,22 @@
                 @endif
 
                 <x-card title="Uploaded Documents" subtitle="Review submitted files and mark each document status">
+                    <x-slot:actions>
+                        <form method="POST" action="{{ route('admin.applicants.document', $applicant) }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="doc_key" value="uploaded_documents">
+                            <input type="hidden" name="status" value="approved">
+                            <button class="doc-action doc-action-approve">APPROVE</button>
+                        </form>
+                        <form method="POST" action="{{ route('admin.applicants.document', $applicant) }}">
+                            @csrf
+                            @method('PATCH')
+                            <input type="hidden" name="doc_key" value="uploaded_documents">
+                            <input type="hidden" name="status" value="rejected">
+                            <button class="doc-action doc-action-reject">REJECT</button>
+                        </form>
+                    </x-slot:actions>
                     <div class="upload-grid">
                         @foreach ($docMap as $docKey => $doc)
                             <x-applicant.document-card :applicant="$applicant" :doc-key="$docKey" :doc="$doc" :status="$docStatuses[$docKey] ?? 'pending'" />
@@ -204,6 +233,21 @@
                 </x-card>
 
                 <x-card title="Payment Proof" subtitle="Enrollment fee verification">
+                    <x-slot:actions>
+                        @if ($payment?->receipt_url)
+                            <form method="POST" action="{{ route('admin.payments.verify', $payment) }}">
+                                @csrf
+                                @method('PATCH')
+                                <button class="doc-action doc-action-approve">APPROVE</button>
+                            </form>
+                            <form method="POST" action="{{ route('admin.payments.reject', $payment) }}">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="remarks" value="Payment proof rejected during admin review.">
+                                <button class="doc-action doc-action-reject">REJECT</button>
+                            </form>
+                        @endif
+                    </x-slot:actions>
                     @if ($paymentUrl)
                         <div class="grid grid-cols-3 gap-4">
                             <button type="button" class="upload-preview rounded-xl border border-slate-200" @click="openPreview('{{ $paymentUrl }}', 'Payment Proof', {{ $paymentIsPdf ? 'true' : 'false' }})">
@@ -218,6 +262,8 @@
                                 <x-applicant.field label="Method" :value="$payment->method_label ?? $payment->method" />
                                 <x-applicant.field label="Reference No." :value="$payment->reference_no" />
                                 <x-applicant.field label="Amount" :value="$payment->amount ? 'PHP '.number_format((float) $payment->amount, 2) : null" />
+                                <x-applicant.field label="Submitted At" :value="$payment->paid_at?->format('M d, Y h:i A')" />
+                                <x-applicant.field label="Verified At" :value="$payment->verified_at?->format('M d, Y h:i A')" />
                             </dl>
                         </div>
                     @else
@@ -229,7 +275,24 @@
                 </x-card>
             </main>
 
-            <aside class="review-panel space-y-6">
+            <aside class="review-panel space-y-4">
+                <x-card title="Applicant">
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <span class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Application ID #</span>
+                            <span class="text-base font-black text-slate-950">{{ str_pad($applicant->id, 4, '0', STR_PAD_LEFT) }}</span>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Family</span>
+                            <span class="text-sm font-bold text-slate-700">FAMILY #{{ str_pad($familyNo, 4, '0', STR_PAD_LEFT) }}</span>
+                        </div>
+                        <div class="col-span-2">
+                            <span class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Full Name</span>
+                            <span class="text-sm font-black text-slate-950">{{ $displayName }}</span>
+                        </div>
+                    </div>
+                </x-card>
+
                 <x-card title="Review Actions">
                     <form method="POST" action="{{ route('admin.applicants.status', $applicant) }}" class="space-y-4">
                         @csrf
@@ -254,14 +317,10 @@
                                     @endforeach
                                 </div>
                             </div>
-                            <div class="mt-2.5 rounded-lg bg-slate-50 border border-slate-100 p-3 text-xs text-slate-600">
-                                <span class="font-extrabold uppercase tracking-wider text-[10px] text-slate-400 block mb-1">Status Description</span>
-                                <span x-text="statusDescriptions[statusValue]" class="italic font-medium text-slate-600"></span>
-                            </div>
                         </div>
                         <div>
                             <label class="mb-2 block text-sm font-bold text-slate-900">Remarks</label>
-                            <textarea name="remarks" rows="4" class="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm">{{ old('remarks', $applicant->review_remarks) }}</textarea>
+                            <textarea name="remarks" rows="2" class="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm">{{ old('remarks', $applicant->review_remarks) }}</textarea>
                         </div>
                         <button class="review-save-button">
                             <i data-lucide="check-circle-2" class="h-4 w-4"></i>
@@ -272,9 +331,22 @@
 
                 <x-card title="Readiness">
                     <div class="space-y-3 text-sm">
-                        <div class="flex justify-between"><span>Documents</span><span class="readiness-pill {{ $allDocsOk ? 'readiness-emerald' : 'readiness-amber' }}">{{ $allDocsOk ? 'Complete' : 'Needs review' }}</span></div>
-                        <div class="flex justify-between"><span>Payment</span><span class="readiness-pill {{ $paymentOk ? 'readiness-emerald' : 'readiness-orange' }}">{{ $paymentOk ? 'Verified' : 'Pending' }}</span></div>
-                        <div class="flex justify-between"><span>Approval</span><span class="readiness-pill {{ $canApprove ? 'readiness-emerald' : 'readiness-rose' }}">{{ $canApprove ? 'Ready' : 'Blocked' }}</span></div>
+                        <div class="flex justify-between gap-3"><span>Documents</span><span class="readiness-pill {{ $allDocsOk ? 'readiness-emerald' : 'readiness-amber' }}">{{ $allDocsOk ? 'Approved' : 'Pending' }}</span></div>
+                        <div class="flex justify-between gap-3"><span>Payment</span><span class="readiness-pill {{ $paymentOk ? 'readiness-emerald' : ($payment?->status === 'rejected' ? 'readiness-rose' : 'readiness-orange') }}">{{ $paymentReadinessLabel }}</span></div>
+                        <div class="flex justify-between gap-3"><span>Approval</span><span class="readiness-pill {{ $applicant->status === 'approved' ? 'readiness-emerald' : ($payment?->status === 'rejected' ? 'readiness-rose' : ($canApprove ? 'readiness-emerald' : 'readiness-amber')) }}">{{ $approvalReadinessLabel }}</span></div>
+                        @unless ($canApprove)
+                            <div class="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold leading-5 text-rose-700">
+                                @if (!$allDocsOk && !$paymentOk)
+                                    Pending / Not Complete: documents and verified payment are required.
+                                @elseif (!$allDocsOk)
+                                    If no documents + may payment = not allow.
+                                @elseif ($payment?->status === 'rejected')
+                                    Payment rejected by Sir Cabel. Enrollment is on hold.
+                                @else
+                                    Documents approved, but no verified payment yet.
+                                @endif
+                            </div>
+                        @endunless
                     </div>
                 </x-card>
             </aside>

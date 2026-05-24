@@ -72,34 +72,85 @@
                 Analytics
             </a>
         </div>
-        <div class="overflow-hidden rounded-lg border border-slate-200">
-            <table class="w-full text-left text-sm">
+        <div class="overflow-x-auto rounded-lg border border-slate-200">
+            @php
+                $capacityRows = $slotRows->isNotEmpty() ? $slotRows : ($gradeSlots->isNotEmpty() ? $gradeSlots->map(fn ($slot) => [
+                    'grade' => $slot['grade'],
+                    'applicant_count' => $slot['applicant_count'] ?? 0,
+                    'face_to_face' => $slot,
+                    'first_shift' => [
+                        'capacity' => 0,
+                        'enrolled' => 0,
+                        'available' => 0,
+                        'used_percent' => 0,
+                        'status' => 'No slot config',
+                        'applicants' => 0,
+                    ],
+                    'second_shift' => [
+                        'capacity' => 0,
+                        'enrolled' => 0,
+                        'available' => 0,
+                        'used_percent' => 0,
+                        'status' => 'No slot config',
+                        'applicants' => 0,
+                    ],
+                ]) : collect());
+            @endphp
+            <table class="min-w-[1180px] w-full text-left text-sm">
                 <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                         <th class="px-5 py-4 font-bold">Grade</th>
                         <th class="px-5 py-4 font-bold">Applicants</th>
-                        <th class="px-5 py-4 font-bold">Enrolled</th>
-                        <th class="px-5 py-4 font-bold">Capacity</th>
-                        <th class="px-5 py-4 font-bold">Available</th>
-                        <th class="px-5 py-4 font-bold">Status</th>
+                        <th class="px-5 py-4 font-bold">Face to Face</th>
+                        <th class="px-5 py-4 font-bold">Flexible Learning - 1st Shift</th>
+                        <th class="px-5 py-4 font-bold">Flexible Learning - 2nd Shift</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
-                    @forelse ($gradeSlots as $slot)
-                        @php
-                            $statusColor = $slot['status'] === 'Full' ? 'red' : ($slot['status'] === 'Limited' ? 'yellow' : 'green');
-                        @endphp
+                    @forelse ($capacityRows as $row)
                         <tr class="transition hover:bg-slate-50">
-                            <td class="px-5 py-4 font-extrabold text-slate-950">{{ $slot['grade'] }}</td>
-                            <td class="px-5 py-4 font-semibold text-slate-700">{{ number_format($slot['applicant_count'] ?? 0) }}</td>
-                            <td class="px-5 py-4 font-semibold text-slate-700">{{ number_format($slot['enrolled']) }}</td>
-                            <td class="px-5 py-4 font-semibold text-slate-700">{{ number_format($slot['capacity']) }}</td>
-                            <td class="px-5 py-4 font-semibold text-slate-700">{{ number_format($slot['available']) }}</td>
-                            <td class="px-5 py-4"><x-badge :color="$statusColor">{{ $slot['status'] }}</x-badge></td>
+                            <td class="px-5 py-4 font-extrabold text-slate-950">{{ $row['grade'] }}</td>
+                            <td class="px-5 py-4 font-semibold text-slate-700">{{ number_format($row['applicant_count'] ?? 0) }}</td>
+                            @foreach ([
+                                'face_to_face' => 'Face to Face',
+                                'first_shift' => 'Flexible Learning - 1st Shift',
+                                'second_shift' => 'Flexible Learning - 2nd Shift',
+                            ] as $slotKey => $slotLabel)
+                                @php
+                                    $slot = $row[$slotKey];
+                                    $statusColor = $slot['status'] === 'Full' ? 'red' : ($slot['status'] === 'Limited' ? 'yellow' : ($slot['status'] === 'Open' ? 'green' : 'gray'));
+                                    $meterColor = $slot['status'] === 'Full' ? 'bg-red-500' : ($slot['status'] === 'Limited' ? 'bg-yellow-500' : ($slot['status'] === 'Open' ? 'bg-emerald-500' : 'bg-slate-300'));
+                                @endphp
+                                <td class="px-5 py-4">
+                                    <div class="min-w-[170px] space-y-2">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <span class="text-xs font-extrabold uppercase tracking-wide text-slate-400">{{ $slotLabel }}</span>
+                                            <x-badge :color="$statusColor">{{ strtoupper($slot['status']) }}</x-badge>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <span class="block text-lg font-extrabold text-slate-950">{{ number_format($slot['applicants'] ?? 0) }}</span>
+                                                <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Applicants</span>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="block text-lg font-extrabold text-slate-950">{{ number_format($slot['available']) }}</span>
+                                                <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Available</span>
+                                            </div>
+                                        </div>
+                                        <div class="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                                            <div class="{{ $meterColor }} h-full rounded-full" style="width: {{ $slot['used_percent'] }}%"></div>
+                                        </div>
+                                        <div class="flex justify-between text-[11px] font-semibold text-slate-500">
+                                            <span>{{ number_format($slot['enrolled']) }} enrolled</span>
+                                            <span>{{ number_format($slot['capacity']) }} capacity</span>
+                                        </div>
+                                    </div>
+                                </td>
+                            @endforeach
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-5 py-10 text-center text-sm font-medium text-slate-500">
+                            <td colspan="5" class="px-5 py-10 text-center text-sm font-medium text-slate-500">
                                 No grade capacity configuration found yet.
                             </td>
                         </tr>

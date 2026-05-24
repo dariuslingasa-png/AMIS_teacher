@@ -36,6 +36,14 @@
                     <i data-lucide="file-search" class="w-4 h-4"></i>
                     Review Applications
                 </a>
+                <a href="{{ route('admin.payments.index') }}" class="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-amber-950 font-bold text-sm px-5 py-2.5 rounded-xl transition-all duration-150 shadow-sm hover:scale-[1.02] focus:ring-4 focus:ring-amber-500/20">
+                    <i data-lucide="credit-card" class="w-4 h-4"></i>
+                    Enrollment Payment Review
+                </a>
+                <a href="{{ route('admin.soa.index') }}" class="inline-flex items-center gap-2 bg-emerald-600/30 hover:bg-emerald-600/50 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-all duration-150 border border-emerald-500/30 hover:scale-[1.02] focus:ring-4 focus:ring-emerald-500/20">
+                    <i data-lucide="scroll-text" class="w-4 h-4"></i>
+                    SOA
+                </a>
                 {{-- Commented out for live production cleanup --}}
                 {{--
                 <a href="{{ route('admin.enrollment.reports') }}" class="inline-flex items-center gap-2 bg-emerald-600/30 hover:bg-emerald-600/50 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-all duration-150 border border-emerald-500/30 hover:scale-[1.02] focus:ring-4 focus:ring-emerald-500/20">
@@ -56,24 +64,21 @@
             </div>
             <div class="flex items-center gap-2">
                 <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{{ $totalApplications }} Applications Applied</span>
-                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">2 modules</span>
+                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">10 modules</span>
             </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <x-dashboard.module-card :href="route('admin.applications.dashboard')" icon="clipboard-check" name="Applications" owner="Registrar Office" summary="Enrollment, review, requirements, approvals ({{ $totalApplications }} applied)" accent="emerald" shape="soft" />
             <x-dashboard.module-card :href="route('admin.students.index')" icon="users" name="Students" owner="Records Office" summary="Records, profiles, history, documents" accent="violet" shape="arch" />
-            {{-- Commented out for live production cleanup --}}
-            {{--
-            <x-dashboard.module-card :href="route('admin.ms-teams.index')" icon="book-open-check" name="Academic" owner="Academic Office" summary="Subjects, curriculum, sections, schedules" accent="sky" shape="soft" />
-            <x-dashboard.module-card href="#" icon="calendar-check" name="Attendance" owner="Academic Office" summary="QR, manual attendance, reports" accent="teal" shape="circle" />
-            <x-dashboard.module-card href="#" icon="graduation-cap" name="Grades" owner="Faculty Office" summary="Encoding, assessment, report cards" accent="blue" shape="arch" />
-            <x-dashboard.module-card :href="route('admin.soa.index')" icon="wallet" name="Finance" owner="Finance Office" summary="Fees, payments, discounts, SOA, receipts" accent="amber" shape="soft" />
-            <x-dashboard.module-card :href="route('admin.enrollment.analytics')" icon="chart-no-axes-combined" name="Analytics" owner="Admin Analytics" summary="Charts, insights, performance reports" accent="cyan" shape="circle" />
-            <x-dashboard.module-card :href="route('admin.enrollment.reports')" icon="file-down" name="Reports" owner="Registrar / Finance" summary="PDF, Excel, registrar and finance exports" accent="indigo" shape="arch" />
-            <x-dashboard.module-card :href="route('admin.admins.index')" icon="shield-check" name="Security" owner="System Admin" summary="Admins, roles, audit logs, login activity" accent="rose" shape="soft" />
-            <x-dashboard.module-card :href="route('admin.settings.discounts')" icon="settings" name="Settings" owner="System Admin" summary="School profile, MS365 sync, integrations" accent="lime" shape="circle" />
-            --}}
+            <x-dashboard.module-card icon="book-open-check" name="Academic" owner="Academic Office" summary="Subjects, curriculum, sections, schedules" accent="sky" shape="soft" status="Coming Soon" disabled />
+            <x-dashboard.module-card icon="calendar-check" name="Attendance" owner="Academic Office" summary="QR, manual attendance, reports" accent="teal" shape="circle" status="Coming Soon" disabled />
+            <x-dashboard.module-card icon="graduation-cap" name="Grades" owner="Faculty Office" summary="Encoding, assessment, report cards" accent="blue" shape="arch" status="Coming Soon" disabled />
+            <x-dashboard.module-card :href="route('admin.finance.dashboard')" icon="wallet" name="Finance Management" owner="Sir Cabel" summary="Enrollment payment review, SOA, fees, and receipts" accent="amber" shape="soft" />
+            <x-dashboard.module-card icon="chart-no-axes-combined" name="Analytics" owner="Admin Analytics" summary="Charts, insights, performance reports" accent="cyan" shape="circle" status="Coming Soon" disabled />
+            <x-dashboard.module-card icon="file-down" name="Reports" owner="Registrar / Finance" summary="PDF, Excel, registrar and finance exports" accent="indigo" shape="arch" status="Coming Soon" disabled />
+            <x-dashboard.module-card :href="route('admin.admins.index')" icon="shield-check" name="Security" owner="System Admin" summary="Admin accounts, role access, and portal security" accent="rose" shape="soft" />
+            <x-dashboard.module-card icon="settings" name="Settings" owner="System Admin" summary="School profile, MS365 sync, integrations" accent="lime" shape="circle" status="Coming Soon" disabled />
         </div>
     </section>
 
@@ -212,9 +217,10 @@
             <div class="space-y-3">
                 <x-dashboard.quick-action :href="route('admin.applications.review')" icon="clipboard-check" label="Review Applications" meta="Approve, reject, or request updates" />
                 <x-dashboard.quick-action :href="route('admin.students.index')" icon="user-plus" label="Add Student" meta="Manage enrolled student records" />
+                <x-dashboard.quick-action :href="route('admin.payments.index')" icon="wallet" label="Enrollment Payment Review" meta="Approve or reject payment proofs" />
+                <x-dashboard.quick-action :href="route('admin.soa.index')" icon="scroll-text" label="SOA" meta="Open student accounts and billing" />
                 {{-- Commented out for live production cleanup --}}
                 {{--
-                <x-dashboard.quick-action :href="route('admin.payments.index')" icon="wallet" label="Payments" meta="Verify enrollment payments" />
                 <x-dashboard.quick-action :href="route('admin.enrollment.reports')" icon="bar-chart-3" label="Reports" meta="Open enrollment reporting" />
                 --}}
             </div>

@@ -104,6 +104,6 @@ class AdminSoaController extends Controller
         // Recalculate SOA
         $account->recalculate();
 
-        return back()->with('success', 'Payment of ₱' . number_format($request->amount, 2) . ' recorded successfully.');
+        return back()->with('success', 'Payment of PHP ' . number_format($request->amount, 2) . ' recorded successfully.');
     }
 }
