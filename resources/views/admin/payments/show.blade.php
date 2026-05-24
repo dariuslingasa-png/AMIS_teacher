@@ -7,6 +7,7 @@
     $invoiceChildAmount = 4000.00;
     $invoiceChildren = $familyChildren->isNotEmpty() ? $familyChildren : collect([$applicant])->filter();
     $invoiceTotal = $invoiceChildren->count() * $invoiceChildAmount;
+    $canReviewPayments = auth()->user()?->canReviewEnrollmentPayments() ?? false;
     $learningModeLabel = function ($mode) {
         $normalized = strtolower(trim((string) $mode));
 
@@ -126,7 +127,7 @@
                                         </div>
                                         <div class="flex flex-wrap items-center gap-2">
                                             <x-badge color="{{ $childStatusColor }}">{{ Str::upper($childStatus === 'missing' ? 'pending' : $childStatus) }}</x-badge>
-                                            @if ($childPayment)
+                                            @if ($childPayment && $canReviewPayments)
                                                 <form method="POST" action="{{ route('admin.payments.verify', $childPayment) }}" class="inline">
                                                     @csrf
                                                     @method('PATCH')

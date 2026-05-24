@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
 class AdminUserController extends Controller
 {
     public function index()
     {
-        $admins = User::where('role', 'admin')
+        $admins = User::whereIn('role', User::ADMIN_PORTAL_ROLES)
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -24,11 +25,75 @@ class AdminUserController extends Controller
         return view('admin.admins.index', compact('admins', 'stats'));
     }
 
+    public function edit(User $user)
+    {
+        $this->ensureSystemAdmin();
+
+        if (! in_array($user->role, User::ADMIN_PORTAL_ROLES, true)) {
+            abort(404);
+        }
+
+        $permissions = $user->access_permissions ?: $user->defaultAccessPermissions();
+
+        return view('admin.admins.edit', compact('user', 'permissions'));
+    }
+
+    public function update(Request $request, User $user)
+    {
+        $this->ensureSystemAdmin();
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
+            'role' => 'required|in:admin,finance,staff',
+            'account_status' => 'required|string|max:50',
+            'password' => 'nullable|string|min:8|confirmed',
+        ]);
+
+        if (! in_array($user->role, User::ADMIN_PORTAL_ROLES, true)) {
+            return back()->withErrors(['error' => 'User is not an admin portal account.']);
+        }
+
+        $permissions = [
+            'payment_review' => $request->boolean('payment_review'),
+            'document_review' => $request->boolean('document_review'),
+            'view_only' => $request->boolean('view_only'),
+        ];
+
+        if ($permissions['view_only']) {
+            $permissions['payment_review'] = false;
+            $permissions['document_review'] = false;
+        }
+
+        if ($user->id === auth()->id() && ($validated['role'] !== 'admin' || $permissions['view_only'])) {
+            return back()->withErrors(['error' => 'You cannot remove your own ADMIN access.']);
+        }
+
+        $updates = [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'role' => $validated['role'],
+            'account_status' => $validated['account_status'],
+            'access_permissions' => $permissions,
+        ];
+
+        if (filled($validated['password'] ?? null)) {
+            $updates['password'] = Hash::make($validated['password']);
+        }
+
+        $user->update($updates);
+
+        return redirect()->route('admin.admins.index')->with('success', "{$user->name}'s account was updated.");
+    }
+
     public function store(Request $request)
     {
+        $this->ensureSystemAdmin();
+
         $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
+            'role'     => 'required|in:admin,finance,staff',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
@@ -37,26 +102,102 @@ class AdminUserController extends Controller
             'email'             => $request->email,
             'username'          => $this->uniqueUsername($request->name),
             'password'          => Hash::make($request->password),
-            'role'              => 'admin',
+            'role'              => $request->role,
+            'access_permissions'=> $this->defaultPermissionsForRole($request->role),
             'account_status'    => 'verified',
             'email_verified_at' => now(),
         ]);
 
-        return back()->with('success', "Admin account created for {$request->name}.");
+        return back()->with('success', "Portal account created for {$request->name}.");
     }
 
     public function destroy(User $user)
     {
+        $this->ensureSystemAdmin();
+
         if ($user->id === auth()->id()) {
             return back()->withErrors(['error' => 'You cannot delete your own account.']);
         }
 
-        if ($user->role !== 'admin') {
-            return back()->withErrors(['error' => 'User is not an admin.']);
+        if (! in_array($user->role, User::ADMIN_PORTAL_ROLES, true)) {
+            return back()->withErrors(['error' => 'User is not an admin portal account.']);
         }
 
         $user->delete();
         return back()->with('success', "Admin account removed.");
+    }
+
+    public function updateRole(Request $request, User $user)
+    {
+        $this->ensureSystemAdmin();
+
+        $request->validate([
+            'role' => 'required|in:admin,finance,staff',
+        ]);
+
+        if (! in_array($user->role, User::ADMIN_PORTAL_ROLES, true)) {
+            return back()->withErrors(['error' => 'User is not an admin portal account.']);
+        }
+
+        if ($user->id === auth()->id() && $request->role !== 'admin') {
+            return back()->withErrors(['error' => 'You cannot remove your own ADMIN access.']);
+        }
+
+        $user->update([
+            'role' => $request->role,
+            'access_permissions' => $this->defaultPermissionsForRole($request->role),
+        ]);
+
+        return back()->with('success', "{$user->name}'s access role was updated.");
+    }
+
+    public function updateAccess(Request $request, User $user)
+    {
+        $this->ensureSystemAdmin();
+
+        $request->validate([
+            'role' => 'required|in:admin,finance,staff',
+        ]);
+
+        if (! in_array($user->role, User::ADMIN_PORTAL_ROLES, true)) {
+            return back()->withErrors(['error' => 'User is not an admin portal account.']);
+        }
+
+        $permissions = [
+            'payment_review' => $request->boolean('payment_review'),
+            'document_review' => $request->boolean('document_review'),
+            'view_only' => $request->boolean('view_only'),
+        ];
+
+        if ($permissions['view_only']) {
+            $permissions['payment_review'] = false;
+            $permissions['document_review'] = false;
+        }
+
+        if ($user->id === auth()->id() && ($request->role !== 'admin' || $permissions['view_only'])) {
+            return back()->withErrors(['error' => 'You cannot remove your own ADMIN access.']);
+        }
+
+        $user->update([
+            'role' => $request->role,
+            'access_permissions' => $permissions,
+        ]);
+
+        return back()->with('success', "{$user->name}'s access permissions were updated.");
+    }
+
+    private function ensureSystemAdmin(): void
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+    }
+
+    private function defaultPermissionsForRole(string $role): array
+    {
+        return [
+            'payment_review' => in_array($role, User::PAYMENT_REVIEW_ROLES, true),
+            'document_review' => $role === 'admin',
+            'view_only' => $role === 'staff',
+        ];
     }
 
     private function uniqueUsername(string $name): string

@@ -15,6 +15,8 @@ class RequirementController extends Controller
 
     public function update(Request $request, EnrollmentApplicant $applicant)
     {
+        abort_unless(auth()->user()?->canReviewEnrollmentApplications(), 403);
+
         if ($request->input('doc_key') === 'uploaded_documents') {
             $this->reviewService->updateUploadedDocumentsStatus($request, $applicant);
 

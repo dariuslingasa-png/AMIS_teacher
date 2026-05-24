@@ -13,6 +13,10 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    public const ADMIN_PORTAL_ROLES = ['admin', 'finance', 'staff'];
+
+    public const PAYMENT_REVIEW_ROLES = ['admin', 'finance'];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -24,6 +28,7 @@ class User extends Authenticatable
         'username',
         'password',
         'role',
+        'access_permissions',
         'account_status',
         'email_verified_at',
     ];
@@ -48,6 +53,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'access_permissions' => 'array',
         ];
     }
 
@@ -59,5 +65,49 @@ class User extends Authenticatable
     public function enrollmentApplicants(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(EnrollmentApplicant::class);
+    }
+
+    public function hasAdminPortalAccess(): bool
+    {
+        return in_array($this->role, self::ADMIN_PORTAL_ROLES, true);
+    }
+
+    public function canReviewEnrollmentPayments(): bool
+    {
+        return $this->allowsAccess('payment_review', in_array($this->role, self::PAYMENT_REVIEW_ROLES, true));
+    }
+
+    public function canReviewEnrollmentApplications(): bool
+    {
+        return $this->allowsAccess('document_review', $this->role === 'admin');
+    }
+
+    public function isViewOnlyAccess(): bool
+    {
+        return (bool) ($this->access_permissions['view_only'] ?? ($this->role === 'staff'));
+    }
+
+    public function defaultAccessPermissions(): array
+    {
+        return [
+            'payment_review' => in_array($this->role, self::PAYMENT_REVIEW_ROLES, true),
+            'document_review' => $this->role === 'admin',
+            'view_only' => $this->role === 'staff',
+        ];
+    }
+
+    private function allowsAccess(string $key, bool $default = false): bool
+    {
+        $permissions = $this->access_permissions;
+
+        if (! is_array($permissions)) {
+            $permissions = $this->defaultAccessPermissions();
+        }
+
+        if ((bool) ($permissions['view_only'] ?? false)) {
+            return false;
+        }
+
+        return (bool) ($permissions[$key] ?? $default);
     }
 }

@@ -11,6 +11,8 @@
     $photoUrl = $applicant->photo_2x2_url ? asset('storage/'.$applicant->photo_2x2_url) : null;
     $paymentUrl = $payment?->receipt_url ? asset('storage/'.$payment->receipt_url) : null;
     $paymentIsPdf = $payment?->receipt_url && strtolower(pathinfo($payment->receipt_url, PATHINFO_EXTENSION)) === 'pdf';
+    $canReviewPayments = auth()->user()?->canReviewEnrollmentPayments() ?? false;
+    $canReviewApplications = auth()->user()?->canReviewEnrollmentApplications() ?? false;
     $paymentReadinessLabel = match (true) {
         !$payment?->receipt_url => 'Waiting for Verification (Sir Cabel)',
         $payment->status === 'verified' && $applicant->status === 'approved' => 'Approved by Sir Cabel',
@@ -209,22 +211,24 @@
                 @endif
 
                 <x-card title="Uploaded Documents" subtitle="Review submitted files and mark each document status">
-                    <x-slot:actions>
-                        <form method="POST" action="{{ route('admin.applicants.document', $applicant) }}">
-                            @csrf
-                            @method('PATCH')
-                            <input type="hidden" name="doc_key" value="uploaded_documents">
-                            <input type="hidden" name="status" value="approved">
-                            <button class="doc-action doc-action-approve">APPROVE</button>
-                        </form>
-                        <form method="POST" action="{{ route('admin.applicants.document', $applicant) }}">
-                            @csrf
-                            @method('PATCH')
-                            <input type="hidden" name="doc_key" value="uploaded_documents">
-                            <input type="hidden" name="status" value="rejected">
-                            <button class="doc-action doc-action-reject">REJECT</button>
-                        </form>
-                    </x-slot:actions>
+                    @if ($canReviewApplications)
+                        <x-slot:actions>
+                            <form method="POST" action="{{ route('admin.applicants.document', $applicant) }}">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="doc_key" value="uploaded_documents">
+                                <input type="hidden" name="status" value="approved">
+                                <button class="doc-action doc-action-approve">APPROVE</button>
+                            </form>
+                            <form method="POST" action="{{ route('admin.applicants.document', $applicant) }}">
+                                @csrf
+                                @method('PATCH')
+                                <input type="hidden" name="doc_key" value="uploaded_documents">
+                                <input type="hidden" name="status" value="rejected">
+                                <button class="doc-action doc-action-reject">REJECT</button>
+                            </form>
+                        </x-slot:actions>
+                    @endif
                     <div class="upload-grid">
                         @foreach ($docMap as $docKey => $doc)
                             <x-applicant.document-card :applicant="$applicant" :doc-key="$docKey" :doc="$doc" :status="$docStatuses[$docKey] ?? 'pending'" />
@@ -234,7 +238,7 @@
 
                 <x-card title="Payment Proof" subtitle="Enrollment fee verification">
                     <x-slot:actions>
-                        @if ($payment?->receipt_url)
+                        @if ($payment?->receipt_url && $canReviewPayments)
                             <form method="POST" action="{{ route('admin.payments.verify', $payment) }}">
                                 @csrf
                                 @method('PATCH')
@@ -293,6 +297,7 @@
                     </div>
                 </x-card>
 
+                @if ($canReviewApplications)
                 <x-card title="Review Actions">
                     <form method="POST" action="{{ route('admin.applicants.status', $applicant) }}" class="space-y-4">
                         @csrf
@@ -328,6 +333,7 @@
                         </button>
                     </form>
                 </x-card>
+                @endif
 
                 <x-card title="Readiness">
                     <div class="space-y-3 text-sm">

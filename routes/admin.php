@@ -90,6 +90,10 @@ Route::name('admin.')->group(function () {
 
         Route::get('/admins', [AdminUserController::class, 'index'])->name('admins.index');
         Route::post('/admins', [AdminUserController::class, 'store'])->name('admins.store');
+        Route::get('/admins/{user}/edit', [AdminUserController::class, 'edit'])->name('admins.edit');
+        Route::patch('/admins/{user}', [AdminUserController::class, 'update'])->name('admins.update');
+        Route::patch('/admins/{user}/role', [AdminUserController::class, 'updateRole'])->name('admins.role');
+        Route::patch('/admins/{user}/access', [AdminUserController::class, 'updateAccess'])->name('admins.access');
         Route::delete('/admins/{user}', [AdminUserController::class, 'destroy'])->name('admins.destroy');
 
         Route::get('/settings/discounts', [AdminDiscountSettingsController::class, 'edit'])->name('settings.discounts');

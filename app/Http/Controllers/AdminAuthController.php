@@ -9,7 +9,7 @@ class AdminAuthController extends Controller
 {
     public function showLogin()
     {
-        if (Auth::check() && Auth::user()->role === 'admin') {
+        if (Auth::check() && Auth::user()->hasAdminPortalAccess()) {
             return redirect()->route('admin.dashboard');
         }
         return view('auth.login');
@@ -25,9 +25,9 @@ class AdminAuthController extends Controller
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
 
-            if ($user->role !== 'admin') {
+            if (! $user->hasAdminPortalAccess()) {
                 Auth::logout();
-                return back()->withErrors(['email' => 'Access denied. Admin accounts only.']);
+                return back()->withErrors(['email' => 'Access denied. Admin portal accounts only.']);
             }
 
             $request->session()->regenerate();
@@ -123,12 +123,12 @@ class AdminAuthController extends Controller
                 'role'           => 'admin',
                 'account_status' => 'verified',
             ]);
-        } elseif ($user->role !== 'admin') {
+        } elseif (! $user->hasAdminPortalAccess()) {
             // Existing user but not admin — upgrade to admin if @amis.edu.ph
             if (str_ends_with(strtolower($upn), '@amis.edu.ph')) {
                 $user->update(['role' => 'admin', 'account_status' => 'verified']);
             } else {
-                return redirect()->route('admin.login')->withErrors(['email' => 'Access denied. Admin accounts only.']);
+                return redirect()->route('admin.login')->withErrors(['email' => 'Access denied. Admin portal accounts only.']);
             }
         }
 

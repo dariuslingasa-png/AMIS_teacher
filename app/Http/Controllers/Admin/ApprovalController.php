@@ -17,6 +17,8 @@ class ApprovalController extends Controller
 
     public function updateStatus(Request $request, EnrollmentApplicant $applicant)
     {
+        $this->ensureApplicationReviewer();
+
         $this->reviewService->updateStatus($request, $applicant);
 
         return back()->with('success', 'Application status updated.');
@@ -24,6 +26,13 @@ class ApprovalController extends Controller
 
     public function approve(EnrollmentApplicant $applicant)
     {
+        $this->ensureApplicationReviewer();
+
         return back()->with('success', $this->approvalService->approve($applicant));
+    }
+
+    private function ensureApplicationReviewer(): void
+    {
+        abort_unless(auth()->user()?->canReviewEnrollmentApplications(), 403);
     }
 }

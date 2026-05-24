@@ -103,6 +103,8 @@ class AdminPaymentController extends Controller
 
     public function verify(Payment $payment)
     {
+        $this->ensurePaymentReviewer();
+
         if (blank($payment->receipt_url)) {
             return back()->withErrors(['status' => 'Cannot verify: payment proof is missing.']);
         }
@@ -117,6 +119,8 @@ class AdminPaymentController extends Controller
 
     public function reject(Request $request, Payment $payment)
     {
+        $this->ensurePaymentReviewer();
+
         $request->validate(['remarks' => 'required|string|max:500']);
 
         $payment->update([
@@ -125,6 +129,11 @@ class AdminPaymentController extends Controller
         ]);
 
         return back()->with('success', 'Payment rejected.');
+    }
+
+    private function ensurePaymentReviewer(): void
+    {
+        abort_unless(auth()->user()?->canReviewEnrollmentPayments(), 403);
     }
 
     private function familyChildrenByPayment($payments): array

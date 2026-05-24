@@ -14,7 +14,7 @@ class AdminOnly
             return redirect()->route('admin.login');
         }
 
-        if (Auth::user()->role !== 'admin') {
+        if (! Auth::user()->hasAdminPortalAccess()) {
             abort(403);
         }
 
