@@ -105,51 +105,84 @@
                     </div>
 
                     <div class="mt-7">
-                        <h3 class="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Payment Details</h3>
-                        <dl class="mt-3 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-4">
-                            <div>
-                                <dt class="text-[10px] font-black uppercase tracking-widest text-slate-400">Reference No.</dt>
-                                <dd class="mt-1 text-sm font-black uppercase text-slate-950">{{ $payment->reference_no ?: 'Not provided' }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-[10px] font-black uppercase tracking-widest text-slate-400">Payment Method</dt>
-                                <dd class="mt-1 text-sm font-black uppercase text-slate-950">{{ $payment->method_label ?? $payment->method ?? '-' }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-[10px] font-black uppercase tracking-widest text-slate-400">Upload Date</dt>
-                                <dd class="mt-1 text-sm font-black text-slate-950">{{ $payment->paid_at?->format('M d, Y h:i A') ?? 'Not provided' }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-[10px] font-black uppercase tracking-widest text-slate-400">Amount</dt>
-                                <dd class="mt-1 text-sm font-black text-slate-950">PHP {{ number_format((float) ($payment->amount ?? 0), 2) }}</dd>
-                            </div>
-                        </dl>
-                    </div>
-
-                    <div class="mt-7">
-                        <h3 class="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Payment Proof</h3>
-                        @if ($paymentUrl)
-                            <button type="button" class="mt-3 block w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 text-left transition hover:border-emerald-200 hover:bg-emerald-50/30" @click="openPreview('{{ $paymentUrl }}', 'Payment Proof', {{ $paymentIsPdf ? 'true' : 'false' }})">
-                                <div class="grid gap-4 p-4 md:grid-cols-[260px_1fr] md:items-center">
-                                    <div class="upload-preview h-44 rounded-xl border border-slate-200 bg-white">
-                                        @if ($paymentIsPdf)
-                                            <span class="upload-pdf"><i data-lucide="file-text" class="h-9 w-9"></i>PDF Receipt</span>
+                        <h3 class="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Payment Proofs</h3>
+                        <div class="mt-3 grid gap-4">
+                            @forelse ($invoiceChildren as $child)
+                                @php
+                                    $childPayment = $child->payment;
+                                    $childPaymentUrl = $childPayment?->receipt_url ? asset('storage/'.$childPayment->receipt_url) : null;
+                                    $childPaymentIsPdf = $childPayment?->receipt_url && strtolower(pathinfo($childPayment->receipt_url, PATHINFO_EXTENSION)) === 'pdf';
+                                    $childStatus = strtolower((string) ($childPayment?->status ?? 'missing'));
+                                    $childStatusColor = $childStatus === 'verified' ? 'green' : ($childStatus === 'rejected' ? 'red' : 'yellow');
+                                @endphp
+                                <article class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                                    <div class="flex flex-col gap-3 border-b border-slate-200 bg-white p-4 lg:flex-row lg:items-start lg:justify-between">
+                                        <div>
+                                            <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Applicant #{{ str_pad((string) $child->id, 4, '0', STR_PAD_LEFT) }}</div>
+                                            <div class="mt-1 text-base font-black uppercase text-slate-950">{{ $child->full_name ?: 'Applicant' }}</div>
+                                            <div class="mt-1 text-xs font-black uppercase tracking-wide text-slate-500">
+                                                {{ $child->grade_level ?? 'GRADE PENDING' }} | {{ $learningModeLabel($child->learning_mode ?? null) }}
+                                            </div>
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <x-badge color="{{ $childStatusColor }}">{{ Str::upper($childStatus === 'missing' ? 'pending' : $childStatus) }}</x-badge>
+                                            @if ($childPayment)
+                                                <form method="POST" action="{{ route('admin.payments.verify', $childPayment) }}" class="inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button class="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">APPROVE</button>
+                                                </form>
+                                                <form method="POST" action="{{ route('admin.payments.reject', $childPayment) }}" class="inline">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="remarks" value="Payment proof rejected by Sir Cabel.">
+                                                    <button class="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-rose-700 hover:bg-rose-100">REJECT</button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="grid gap-4 p-4 lg:grid-cols-[260px_1fr] lg:items-center">
+                                        @if ($childPaymentUrl)
+                                            <button type="button" class="upload-preview h-44 rounded-xl border border-slate-200 bg-white text-left" @click="openPreview('{{ $childPaymentUrl }}', '{{ addslashes($child->full_name ?: 'Payment Proof') }}', {{ $childPaymentIsPdf ? 'true' : 'false' }})">
+                                                @if ($childPaymentIsPdf)
+                                                    <span class="upload-pdf"><i data-lucide="file-text" class="h-9 w-9"></i>PDF Receipt</span>
+                                                @else
+                                                    <img src="{{ $childPaymentUrl }}" alt="Payment Proof">
+                                                @endif
+                                            </button>
                                         @else
-                                            <img src="{{ $paymentUrl }}" alt="Payment Proof">
+                                            <div class="empty-state h-44 rounded-xl border border-slate-200 bg-white">
+                                                <i data-lucide="receipt-text" class="h-8 w-8"></i>
+                                                <p>No payment proof uploaded.</p>
+                                            </div>
                                         @endif
+                                        <dl class="grid gap-3 sm:grid-cols-2">
+                                            <div>
+                                                <dt class="text-[10px] font-black uppercase tracking-widest text-slate-400">Reference No.</dt>
+                                                <dd class="mt-1 text-sm font-black uppercase text-slate-950">{{ $childPayment?->reference_no ?: 'Not provided' }}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-[10px] font-black uppercase tracking-widest text-slate-400">Payment Method</dt>
+                                                <dd class="mt-1 text-sm font-black uppercase text-slate-950">{{ $childPayment?->method_label ?? $childPayment?->method ?? '-' }}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-[10px] font-black uppercase tracking-widest text-slate-400">Upload Date</dt>
+                                                <dd class="mt-1 text-sm font-black text-slate-950">{{ $childPayment?->paid_at?->format('M d, Y h:i A') ?? 'Not provided' }}</dd>
+                                            </div>
+                                            <div>
+                                                <dt class="text-[10px] font-black uppercase tracking-widest text-slate-400">Amount</dt>
+                                                <dd class="mt-1 text-sm font-black text-slate-950">PHP {{ number_format((float) ($childPayment?->amount ?? 0), 2) }}</dd>
+                                            </div>
+                                        </dl>
                                     </div>
-                                    <div>
-                                        <div class="text-base font-black text-slate-950">Screenshot preview attached</div>
-                                        <div class="mt-1 text-sm font-semibold text-slate-500">Click to view full image.</div>
-                                    </div>
+                                </article>
+                            @empty
+                                <div class="empty-state">
+                                    <i data-lucide="receipt-text" class="h-8 w-8"></i>
+                                    <p>No payment proof uploaded.</p>
                                 </div>
-                            </button>
-                        @else
-                            <div class="mt-3 empty-state">
-                                <i data-lucide="receipt-text" class="h-8 w-8"></i>
-                                <p>No payment proof uploaded.</p>
-                            </div>
-                        @endif
+                            @endforelse
+                        </div>
                     </div>
                 </div>
             </div>

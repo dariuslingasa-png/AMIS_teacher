@@ -7,6 +7,7 @@ use App\Models\EnrollmentApplicant;
 use App\Models\StudentAccount;
 use App\Models\StudentAccountPayment;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class AdminPaymentController extends Controller
 {
@@ -57,11 +58,22 @@ class AdminPaymentController extends Controller
             $query->where('status', $request->status);
         }
 
-        $payments = $query->paginate(20);
-        $familyChildrenByPayment = $this->familyChildrenByPayment($payments->getCollection());
-        $familyLabelsByPayment = $this->familyLabelsByPayment($payments->getCollection(), $familyChildrenByPayment);
+        $familyRows = $this->paymentFamilyRows($query->get());
+        $page = max((int) $request->input('page', 1), 1);
+        $perPage = 20;
 
-        return view('admin.payments.index', compact('payments', 'familyChildrenByPayment', 'familyLabelsByPayment'));
+        $paymentFamilies = new LengthAwarePaginator(
+            $familyRows->forPage($page, $perPage)->values(),
+            $familyRows->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
+
+        return view('admin.payments.index', compact('paymentFamilies'));
     }
 
     public function show(Payment $payment)
@@ -135,6 +147,12 @@ class AdminPaymentController extends Controller
             ->unique()
             ->values();
 
+        if ($familyIds->isEmpty() && $userIds->isEmpty()) {
+            return $payments->mapWithKeys(fn ($payment) => [
+                $payment->id => collect([$payment->applicant])->filter(),
+            ])->all();
+        }
+
         $children = EnrollmentApplicant::with('payment')
             ->where(function ($query) use ($familyIds, $userIds) {
                 if ($familyIds->isNotEmpty()) {
@@ -170,6 +188,87 @@ class AdminPaymentController extends Controller
 
             return [$payment->id => $this->familyLabel($children, $payment->applicant)];
         })->all();
+    }
+
+    private function paymentFamilyRows($payments)
+    {
+        $familyChildrenByPayment = $this->familyChildrenByPayment($payments);
+
+        return $payments
+            ->filter(fn ($payment) => $payment->applicant)
+            ->groupBy(fn ($payment) => $this->paymentFamilyKey($payment))
+            ->map(function ($familyPayments) use ($familyChildrenByPayment) {
+                $representative = $familyPayments
+                    ->sortByDesc(fn ($payment) => optional($payment->updated_at)->timestamp ?? 0)
+                    ->first();
+                $applicant = $representative->applicant;
+                $children = $familyChildrenByPayment[$representative->id] ?? collect([$applicant])->filter();
+                $paymentsForTotal = $children
+                    ->pluck('payment')
+                    ->filter(fn ($payment) => $payment && filled($payment->receipt_url));
+                $paymentsForStatus = $paymentsForTotal->isNotEmpty() ? $paymentsForTotal : $familyPayments;
+                $statuses = $paymentsForStatus
+                    ->pluck('status')
+                    ->map(fn ($status) => strtolower((string) ($status ?: 'pending')))
+                    ->filter()
+                    ->values();
+
+                return [
+                    'key' => $this->paymentFamilyKey($representative),
+                    'payment' => $representative,
+                    'payments' => $familyPayments->values(),
+                    'children' => $children,
+                    'family_no' => $applicant?->family_application_id ?: $applicant?->id,
+                    'family_label' => $this->familyLabel($children, $applicant),
+                    'amount' => $paymentsForTotal->isNotEmpty()
+                        ? $paymentsForTotal->sum(fn ($payment) => (float) ($payment->amount ?? 0))
+                        : $familyPayments->sum(fn ($payment) => (float) ($payment->amount ?? 0)),
+                    'methods' => $paymentsForStatus
+                        ->pluck('method')
+                        ->filter()
+                        ->map(fn ($method) => strtoupper((string) $method))
+                        ->unique()
+                        ->values(),
+                    'status' => $this->familyPaymentStatus($statuses),
+                    'updated_at' => $paymentsForStatus
+                        ->sortByDesc(fn ($payment) => optional($payment->updated_at)->timestamp ?? 0)
+                        ->first()?->updated_at,
+                ];
+            })
+            ->sortByDesc(fn ($row) => optional($row['updated_at'])->timestamp ?? 0)
+            ->values();
+    }
+
+    private function paymentFamilyKey(Payment $payment): string
+    {
+        $applicant = $payment->applicant;
+
+        if (!$applicant) {
+            return 'payment:'.$payment->id;
+        }
+
+        if (filled($applicant->family_application_id)) {
+            return 'family:'.$applicant->family_application_id;
+        }
+
+        return filled($applicant->user_id) ? 'user:'.$applicant->user_id : 'applicant:'.$applicant->id;
+    }
+
+    private function familyPaymentStatus($statuses): string
+    {
+        if ($statuses->isEmpty()) {
+            return 'pending';
+        }
+
+        if ($statuses->contains('rejected')) {
+            return 'rejected';
+        }
+
+        if ($statuses->every(fn ($status) => $status === 'verified')) {
+            return 'verified';
+        }
+
+        return 'pending';
     }
 
     private function familyLabel($children, ?EnrollmentApplicant $fallback = null): string

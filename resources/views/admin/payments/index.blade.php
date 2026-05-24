@@ -12,12 +12,14 @@
         <table class="amis-table">
             <thead><tr><th>Family / Applicant</th><th>Children</th><th>Amount</th><th>Method</th><th>Status</th><th>Updated</th><th></th></tr></thead>
             <tbody>
-                @forelse ($payments as $payment)
+                @forelse ($paymentFamilies as $family)
                     @php
-                        $children = $familyChildrenByPayment[$payment->id] ?? collect([$payment->applicant])->filter();
-                        $applicant = $payment->applicant;
-                        $familyNo = $applicant?->family_application_id ?: $applicant?->id;
-                        $familyLabel = $familyLabelsByPayment[$payment->id] ?? 'FAMILY';
+                        $payment = $family['payment'];
+                        $children = $family['children'];
+                        $familyNo = $family['family_no'];
+                        $familyLabel = $family['family_label'];
+                        $familyStatus = $family['status'];
+                        $statusColor = $familyStatus === 'verified' ? 'green' : ($familyStatus === 'rejected' ? 'red' : 'yellow');
                     @endphp
                     <tr>
                         <td>
@@ -32,7 +34,16 @@
                         <td>
                             <div class="flex max-w-sm flex-wrap gap-1.5">
                                 @forelse ($children as $child)
-                                    <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-slate-600">
+                                    @php
+                                        $childStatus = strtolower((string) ($child->payment?->status ?? 'missing'));
+                                        $childChip = match ($childStatus) {
+                                            'verified' => 'bg-emerald-50 text-emerald-700',
+                                            'rejected' => 'bg-rose-50 text-rose-700',
+                                            'pending' => 'bg-amber-50 text-amber-700',
+                                            default => 'bg-slate-100 text-slate-600',
+                                        };
+                                    @endphp
+                                    <span class="rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide {{ $childChip }}">
                                         {{ $child->full_name ?: 'Applicant' }}
                                     </span>
                                 @empty
@@ -40,26 +51,15 @@
                                 @endforelse
                             </div>
                         </td>
-                        <td>{{ isset($payment->amount) ? 'PHP '.number_format((float) $payment->amount, 2) : '-' }}</td>
-                        <td>{{ Str::upper($payment->method ?? '-') }}</td>
-                        <td><x-badge color="{{ ($payment->status ?? '') === 'verified' ? 'green' : (($payment->status ?? '') === 'rejected' ? 'red' : 'yellow') }}">{{ Str::upper($payment->status ?? 'pending') }}</x-badge></td>
-                        <td>{{ optional($payment->updated_at)->format('M d, Y') }}</td>
+                        <td>{{ 'PHP '.number_format((float) $family['amount'], 2) }}</td>
+                        <td>{{ $family['methods']->isNotEmpty() ? $family['methods']->join(', ') : '-' }}</td>
+                        <td><x-badge color="{{ $statusColor }}">{{ Str::upper($familyStatus) }}</x-badge></td>
+                        <td>{{ optional($family['updated_at'])->format('M d, Y') }}</td>
                         <td>
                             <div class="flex flex-wrap items-center gap-2">
                                 @if ($payment->applicant)
-                                    <a href="{{ route('admin.payments.show', $payment) }}" class="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-200">Review</a>
+                                    <a href="{{ route('admin.payments.show', $payment) }}" class="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-200">Review Family</a>
                                 @endif
-                                <form method="POST" action="{{ route('admin.payments.verify', $payment) }}" class="inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button class="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">APPROVE</button>
-                                </form>
-                                <form method="POST" action="{{ route('admin.payments.reject', $payment) }}" class="inline">
-                                    @csrf
-                                    @method('PATCH')
-                                    <input type="hidden" name="remarks" value="Payment proof rejected by Sir Cabel.">
-                                    <button class="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-rose-700 hover:bg-rose-100">REJECT</button>
-                                </form>
                             </div>
                         </td>
                     </tr>
@@ -68,6 +68,6 @@
                 @endforelse
             </tbody>
         </table>
-        <div class="mt-4">{{ $payments->links() }}</div>
+        <div class="mt-4">{{ $paymentFamilies->links() }}</div>
     </x-card>
 </x-admin-layout>
