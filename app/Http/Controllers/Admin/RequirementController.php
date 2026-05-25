@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdminAuditLog;
 use App\Models\EnrollmentApplicant;
 use App\Services\Admin\Enrollment\EnrollmentReviewService;
 use Illuminate\Http\Request;
@@ -19,11 +20,21 @@ class RequirementController extends Controller
 
         if ($request->input('doc_key') === 'uploaded_documents') {
             $this->reviewService->updateUploadedDocumentsStatus($request, $applicant);
+            AdminAuditLog::record('documents_'.$request->input('status'), true, 'Uploaded documents status updated.', [
+                'applicant_id' => $applicant->id,
+                'doc_key' => 'uploaded_documents',
+                'status' => $request->input('status'),
+            ]);
 
             return back()->with('success', 'Uploaded documents status updated.');
         }
 
         $this->reviewService->updateDocumentStatus($request, $applicant);
+        AdminAuditLog::record('document_'.$request->input('status'), true, 'Document status updated.', [
+            'applicant_id' => $applicant->id,
+            'doc_key' => $request->input('doc_key'),
+            'status' => $request->input('status'),
+        ]);
 
         return back()->with('success', 'Document status updated.');
     }

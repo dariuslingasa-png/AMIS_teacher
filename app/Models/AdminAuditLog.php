@@ -30,4 +30,21 @@ class AdminAuditLog extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public static function record(string $event, bool $successful = true, ?string $message = null, array $metadata = []): void
+    {
+        $request = request();
+        $user = auth()->user();
+
+        self::create([
+            'user_id' => $user?->id,
+            'event' => $event,
+            'email' => $user?->email,
+            'ip_address' => $request?->ip(),
+            'user_agent' => \Illuminate\Support\Str::limit((string) $request?->userAgent(), 1000, ''),
+            'successful' => $successful,
+            'message' => $message,
+            'metadata' => $metadata ?: null,
+        ]);
+    }
 }

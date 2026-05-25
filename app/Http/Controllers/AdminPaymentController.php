@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Payment;
+use App\Models\AdminAuditLog;
 use App\Models\EnrollmentApplicant;
 use App\Models\StudentAccount;
 use App\Models\StudentAccountPayment;
@@ -114,6 +115,13 @@ class AdminPaymentController extends Controller
             'verified_at' => now(),
         ]);
 
+        AdminAuditLog::record('payment_approved', true, 'Payment proof approved.', [
+            'payment_id' => $payment->id,
+            'applicant_id' => $payment->enrollment_applicant_id,
+            'amount' => $payment->amount,
+            'method' => $payment->method,
+        ]);
+
         return back()->with('success', 'Payment verified successfully.');
     }
 
@@ -125,6 +133,12 @@ class AdminPaymentController extends Controller
 
         $payment->update([
             'status'  => 'rejected',
+            'remarks' => $request->remarks,
+        ]);
+
+        AdminAuditLog::record('payment_rejected', true, 'Payment proof rejected.', [
+            'payment_id' => $payment->id,
+            'applicant_id' => $payment->enrollment_applicant_id,
             'remarks' => $request->remarks,
         ]);
 
