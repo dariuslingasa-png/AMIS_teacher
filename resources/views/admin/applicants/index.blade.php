@@ -186,7 +186,7 @@
                                 @php
                                     $childName = \Illuminate\Support\Str::upper(trim(($child->first_name ?? '').' '.($child->middle_name ?? '').' '.($child->last_name ?? '')) ?: 'Student');
                                     $childInitials = collect(explode(' ', $childName))->filter()->take(2)->map(fn ($part) => \Illuminate\Support\Str::substr($part, 0, 1))->join('');
-                                    $photoUrl = $child->photo_2x2_url ? asset('storage/'.$child->photo_2x2_url) : null;
+                                    $photoUrl = \App\Support\EnrollmentStorage::url($child->photo_2x2_url);
                                     $statusLabel = $statusLabels[$child->status] ?? \Illuminate\Support\Str::headline($child->status ?? 'under_review');
                                     $paymentLabel = $childPaymentLabel($child);
                                     $studentType = $typeLabel($child->student_type);

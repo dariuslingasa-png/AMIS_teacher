@@ -1,5 +1,5 @@
 @php
-    $paymentUrl = $payment->receipt_url ? asset('storage/'.$payment->receipt_url) : null;
+    $paymentUrl = \App\Support\EnrollmentStorage::url($payment->receipt_url);
     $paymentIsPdf = $payment->receipt_url && strtolower(pathinfo($payment->receipt_url, PATHINFO_EXTENSION)) === 'pdf';
     $familyNo = $applicant?->family_application_id ?: $applicant?->id;
     $invoiceNo = 'INV-ENR-'.str_pad((string) $payment->id, 5, '0', STR_PAD_LEFT);
@@ -111,7 +111,7 @@
                             @forelse ($invoiceChildren as $child)
                                 @php
                                     $childPayment = $child->payment;
-                                    $childPaymentUrl = $childPayment?->receipt_url ? asset('storage/'.$childPayment->receipt_url) : null;
+                                    $childPaymentUrl = \App\Support\EnrollmentStorage::url($childPayment?->receipt_url);
                                     $childPaymentIsPdf = $childPayment?->receipt_url && strtolower(pathinfo($childPayment->receipt_url, PATHINFO_EXTENSION)) === 'pdf';
                                     $childStatus = strtolower((string) ($childPayment?->status ?? 'missing'));
                                     $childStatusColor = $childStatus === 'verified' ? 'green' : ($childStatus === 'rejected' ? 'red' : 'yellow');
@@ -127,19 +127,6 @@
                                         </div>
                                         <div class="flex flex-wrap items-center gap-2">
                                             <x-badge color="{{ $childStatusColor }}">{{ Str::upper($childStatus === 'missing' ? 'pending' : $childStatus) }}</x-badge>
-                                            @if ($childPayment && $canReviewPayments)
-                                                <form method="POST" action="{{ route('admin.payments.verify', $childPayment) }}" class="inline">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button class="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">APPROVE</button>
-                                                </form>
-                                                <form method="POST" action="{{ route('admin.payments.reject', $childPayment) }}" class="inline">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <input type="hidden" name="remarks" value="Payment proof rejected by Sir Cabel.">
-                                                    <button class="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-rose-700 hover:bg-rose-100">REJECT</button>
-                                                </form>
-                                            @endif
                                         </div>
                                     </div>
                                     <div class="grid gap-4 p-4 lg:grid-cols-[260px_1fr] lg:items-center">
@@ -176,6 +163,25 @@
                                             </div>
                                         </dl>
                                     </div>
+                                    @if ($childPayment && $canReviewPayments)
+                                        <div class="grid gap-3 border-t border-slate-200 bg-white p-4 sm:grid-cols-2">
+                                            <form method="POST" action="{{ route('admin.payments.verify', $childPayment) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button class="w-full rounded-2xl bg-emerald-600 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700">
+                                                    APPROVE
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ route('admin.payments.reject', $childPayment) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                <input type="hidden" name="remarks" value="Payment proof rejected by Sir Cabel.">
+                                                <button class="w-full rounded-2xl bg-rose-600 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-700">
+                                                    REJECT
+                                                </button>
+                                            </form>
+                                        </div>
+                                    @endif
                                 </article>
                             @empty
                                 <div class="empty-state">

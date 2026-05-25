@@ -9,7 +9,7 @@
     $name = trim(($student->applicant->first_name ?? '').' '.($student->applicant->middle_name ?? '').' '.($student->applicant->last_name ?? ''));
     $displayName = $name ? Str::upper($name) : 'STUDENT PROFILE';
     
-    $photoUrl = $student->applicant->photo_2x2_url ? asset('storage/'.$student->applicant->photo_2x2_url) : null;
+    $photoUrl = \App\Support\EnrollmentStorage::url($student->applicant->photo_2x2_url);
     $studentAddress = implode(', ', array_filter([$student->applicant->street_address, $student->applicant->city, $student->applicant->state_province, $student->applicant->country]));
     $homeAddress = implode(', ', array_filter([$student->applicant->home_street_address, $student->applicant->home_city, $student->applicant->home_state_province]));
     $studentMobile = trim(($student->applicant->mobile_country_code ?? '').' '.($student->applicant->mobile_number ?? ''));
@@ -340,7 +340,7 @@
 
                     @foreach($docs as $doc)
                         @php
-                            $assetUrl = $doc['url'] ? asset('storage/'.$doc['url']) : null;
+                            $assetUrl = \App\Support\EnrollmentStorage::url($doc['url']);
                             $isPdf = $doc['url'] && strtolower(pathinfo($doc['url'], PATHINFO_EXTENSION)) === 'pdf';
                         @endphp
                         <article class="upload-card {{ $doc['url'] ? '' : 'upload-card-missing' }}">

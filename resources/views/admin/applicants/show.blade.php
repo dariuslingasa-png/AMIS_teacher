@@ -8,8 +8,8 @@
     $name = trim(($applicant->first_name ?? '').' '.($applicant->middle_name ?? '').' '.($applicant->last_name ?? ''));
     $displayName = $name ? Str::upper($name) : 'APPLICANT';
     $breadcrumbName = $displayName;
-    $photoUrl = $applicant->photo_2x2_url ? asset('storage/'.$applicant->photo_2x2_url) : null;
-    $paymentUrl = $payment?->receipt_url ? asset('storage/'.$payment->receipt_url) : null;
+    $photoUrl = \App\Support\EnrollmentStorage::url($applicant->photo_2x2_url);
+    $paymentUrl = \App\Support\EnrollmentStorage::url($payment?->receipt_url);
     $paymentIsPdf = $payment?->receipt_url && strtolower(pathinfo($payment->receipt_url, PATHINFO_EXTENSION)) === 'pdf';
     $canReviewPayments = auth()->user()?->canReviewEnrollmentPayments() ?? false;
     $canReviewApplications = auth()->user()?->canReviewEnrollmentApplications() ?? false;

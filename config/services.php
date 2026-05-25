@@ -44,4 +44,6 @@ return [
         'redirect_uri'   => env('MICROSOFT_REDIRECT_URI', 'http://127.0.0.1:8000/auth/microsoft/callback'),
     ],
 
+    'enrollment_storage_url' => env('ENROLLMENT_STORAGE_URL'),
+
 ];

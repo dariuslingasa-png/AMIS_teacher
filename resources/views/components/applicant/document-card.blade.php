@@ -3,7 +3,7 @@
 @php
     $url = $doc['url'] ?? null;
     $label = $doc['label'] ?? 'Document';
-    $assetUrl = $url ? asset('storage/'.$url) : null;
+    $assetUrl = \App\Support\EnrollmentStorage::url($url);
     $isPdf = $url && strtolower(pathinfo($url, PATHINFO_EXTENSION)) === 'pdf';
     $statusColor = ['approved' => 'green', 'rejected' => 'red', 'pending' => 'yellow'][$status] ?? 'gray';
 @endphp
