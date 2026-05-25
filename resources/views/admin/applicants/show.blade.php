@@ -79,8 +79,8 @@
 @endphp
 
 <x-admin-layout title="Applicant Detail" :breadcrumbs="[['label' => 'Applications', 'href' => route('admin.applications.enrollment')], ['label' => 'Enrollment', 'href' => route('admin.applications.enrollment')], ['label' => $breadcrumbName, 'href' => null]]">
-    <div x-data="{ preview: false, src: '', label: '', pdf: false, statusOpen: false, statusValue: @js($currentStatus), statusLabel: @js($currentStatusLabel), statusDescriptions: { draft: 'Application is still being drafted.', ready_for_submission: 'Application is complete and ready for submission.', submitted: 'Student successfully submitted application.', under_review: 'Admin is already reviewing the enrollment application.', pending: 'Waiting for additional requirements, payment, or clarification.', approved: 'Enrollment application approved.', rejected: 'Enrollment application declined.' }, openPreview(url, title, isPdf) { this.preview = true; this.src = url; this.label = title; this.pdf = isPdf; }, chooseStatus(value, label) { this.statusValue = value; this.statusLabel = label; this.statusOpen = false; } }"
-         @keydown.escape.window="preview = false; statusOpen = false">
+    <div x-data="{ preview: false, src: '', label: '', pdf: false, zoom: 1, statusOpen: false, statusValue: @js($currentStatus), statusLabel: @js($currentStatusLabel), statusDescriptions: { draft: 'Application is still being drafted.', ready_for_submission: 'Application is complete and ready for submission.', submitted: 'Student successfully submitted application.', under_review: 'Admin is already reviewing the enrollment application.', pending: 'Waiting for additional requirements, payment, or clarification.', approved: 'Enrollment application approved.', rejected: 'Enrollment application declined.' }, openPreview(url, title, isPdf) { this.preview = true; this.src = url; this.label = title; this.pdf = isPdf; this.zoom = 1; }, closePreview() { this.preview = false; this.zoom = 1; }, zoomIn() { this.zoom = Math.min(3, Number((this.zoom + 0.25).toFixed(2))); }, zoomOut() { this.zoom = Math.max(0.5, Number((this.zoom - 0.25).toFixed(2))); }, resetZoom() { this.zoom = 1; }, chooseStatus(value, label) { this.statusValue = value; this.statusLabel = label; this.statusOpen = false; } }"
+         @keydown.escape.window="closePreview(); statusOpen = false">
         <div class="mb-5 flex justify-end">
             <a href="{{ route('admin.applications.enrollment') }}"
                class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50">
@@ -360,14 +360,22 @@
 
         <template x-teleport="body">
             <div x-show="preview" class="preview-modal" x-cloak>
-                <button type="button" class="preview-backdrop" @click="preview = false"></button>
+                <button type="button" class="preview-backdrop" @click="closePreview()"></button>
                 <div class="preview-panel">
-                    <div class="preview-head">
+                    <div class="preview-head gap-3">
                         <strong x-text="label"></strong>
-                        <button type="button" class="text-2xl leading-none text-slate-500" @click="preview = false">&times;</button>
+                        <div class="ml-auto flex items-center gap-2" x-show="!pdf">
+                            <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100" @click="zoomOut()">-</button>
+                            <span class="min-w-14 rounded-full bg-slate-100 px-3 py-1 text-center text-xs font-black text-slate-700" x-text="Math.round(zoom * 100) + '%'"></span>
+                            <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100" @click="zoomIn()">+</button>
+                            <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500 shadow-sm transition hover:bg-slate-100" @click="resetZoom()">Reset</button>
+                        </div>
+                        <button type="button" class="text-2xl leading-none text-slate-500" @click="closePreview()">&times;</button>
                     </div>
                     <div class="preview-body">
-                        <template x-if="!pdf"><img :src="src" :alt="label"></template>
+                        <template x-if="!pdf">
+                            <img :src="src" :alt="label" class="transition-all duration-150" :style="'max-width: none; width: ' + (zoom * 100) + '%;'">
+                        </template>
                         <template x-if="pdf"><iframe :src="src"></iframe></template>
                     </div>
                 </div>

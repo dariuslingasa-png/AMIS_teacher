@@ -21,8 +21,8 @@
 @endphp
 
 <x-admin-layout title="Payment Review">
-    <div x-data="{ preview: false, src: '', label: '', pdf: false, openPreview(url, title, isPdf) { this.preview = true; this.src = url; this.label = title; this.pdf = isPdf; } }"
-         @keydown.escape.window="preview = false"
+    <div x-data="{ preview: false, src: '', label: '', pdf: false, zoom: 1, openPreview(url, title, isPdf) { this.preview = true; this.src = url; this.label = title; this.pdf = isPdf; this.zoom = 1; }, closePreview() { this.preview = false; this.zoom = 1; }, zoomIn() { this.zoom = Math.min(3, Number((this.zoom + 0.25).toFixed(2))); }, zoomOut() { this.zoom = Math.max(0.5, Number((this.zoom - 0.25).toFixed(2))); }, resetZoom() { this.zoom = 1; } }"
+         @keydown.escape.window="closePreview()"
          class="space-y-6">
         <section class="overflow-hidden rounded-3xl p-6 text-white shadow-xl shadow-amber-900/10" style="background: linear-gradient(135deg, #111827 0%, #92400e 48%, #065f46 100%);">
             <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -176,7 +176,7 @@
                                                 @csrf
                                                 @method('PATCH')
                                                 <input type="hidden" name="remarks" value="Payment proof rejected by Sir Cabel.">
-                                                <button class="w-full rounded-2xl bg-rose-600 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-700">
+                                                <button class="w-full rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-rose-700 shadow-lg shadow-rose-100 transition hover:border-rose-600 hover:bg-rose-600 hover:text-white">
                                                     REJECT
                                                 </button>
                                             </form>
@@ -197,18 +197,26 @@
 
         <div x-show="preview" x-cloak x-transition class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
             <div class="relative max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl">
-                <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
                     <h2 class="font-black text-slate-950" x-text="label"></h2>
-                    <button type="button" class="rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200" @click="preview = false">
-                        <i data-lucide="x" class="h-5 w-5"></i>
-                    </button>
+                    <div class="ml-auto flex items-center gap-2">
+                        <div class="flex items-center gap-2" x-show="!pdf">
+                            <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100" @click="zoomOut()">-</button>
+                            <span class="min-w-14 rounded-full bg-slate-100 px-3 py-1 text-center text-xs font-black text-slate-700" x-text="Math.round(zoom * 100) + '%'"></span>
+                            <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100" @click="zoomIn()">+</button>
+                            <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500 shadow-sm transition hover:bg-slate-100" @click="resetZoom()">Reset</button>
+                        </div>
+                        <button type="button" class="rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200" @click="closePreview()">
+                            <i data-lucide="x" class="h-5 w-5"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="max-h-[78vh] overflow-auto bg-slate-50 p-4">
                     <template x-if="pdf">
                         <iframe :src="src" class="h-[75vh] w-full rounded-2xl bg-white"></iframe>
                     </template>
                     <template x-if="!pdf">
-                        <img :src="src" :alt="label" class="mx-auto max-h-[75vh] rounded-2xl object-contain">
+                        <img :src="src" :alt="label" class="mx-auto rounded-2xl object-contain transition-all duration-150" :style="'max-width: none; width: ' + (zoom * 100) + '%;'">
                     </template>
                 </div>
             </div>
