@@ -3,28 +3,21 @@
         search: '',
         addModal: false
     }">
-        <!-- Glassmorphic Hero Header Banner -->
-        <div class="relative overflow-hidden p-6 md:p-8 bg-gradient-to-r from-purple-850 to-indigo-950 rounded-2xl border border-purple-750/30 shadow-sm text-white">
-            <div class="absolute right-0 top-0 -mt-4 -mr-4 w-56 h-56 rounded-full bg-purple-500/10 blur-3xl"></div>
-            <div class="absolute left-1/3 bottom-0 -mb-8 w-64 h-64 rounded-full bg-indigo-500/10 blur-3xl"></div>
-            
-            <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <section class="overflow-hidden rounded-3xl p-6 text-white shadow-xl shadow-sky-900/10" style="background: linear-gradient(135deg, #0f172a 0%, #075985 48%, #065f46 100%);">
+            <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 backdrop-blur-xs mb-3">
-                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span>
-                        Faculty staff
-                    </span>
-                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white">Teachers Directory</h1>
-                    <p class="mt-2 text-sm md:text-base text-purple-100 max-w-2xl font-light">
-                        Manage active faculty details, assign academic department classifications, and configure email contacts.
+                    <span class="inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-sky-50">Academic Workspace</span>
+                    <h1 class="mt-4 text-3xl font-black tracking-tight">Teachers Directory</h1>
+                    <p class="mt-2 max-w-2xl text-sm font-semibold leading-6 text-sky-50/90">
+                        Manage faculty details, department classifications, and school email contacts.
                     </p>
                 </div>
-                <button type="button" @click="addModal = true" class="inline-flex items-center gap-2 bg-white hover:bg-purple-50 active:bg-purple-100 text-purple-850 font-bold text-sm px-5 py-2.5 rounded-xl transition-all duration-150 shadow-sm hover:scale-[1.02]">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <button type="button" @click="addModal = true" class="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-sky-800 shadow-lg shadow-sky-900/20 transition hover:bg-sky-50">
+                    <i data-lucide="plus-circle" class="h-4 w-4"></i>
                     Register Teacher
                 </button>
             </div>
-        </div>
+        </section>
 
         @php
             $activeCount = collect($teachers)->where('status', 'Active')->count();
@@ -35,7 +28,7 @@
 
         <!-- Telemetry metric cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <div class="bg-white rounded-2xl border border-gray-150 p-5 shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-1 relative overflow-hidden group border-t-4 border-t-purple-500">
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-1 relative overflow-hidden group border-t-4 border-t-purple-500">
                 <div class="flex items-center justify-between">
                     <span class="font-bold text-gray-400 text-xs tracking-wider uppercase">Active Faculty</span>
                     <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-50 text-purple-650 animate-bounce">
@@ -47,7 +40,7 @@
                     <p class="text-[11px] text-gray-400 mt-1 font-medium">Currently teaching</p>
                 </div>
             </div>
-            <div class="bg-white rounded-2xl border border-gray-150 p-5 shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-1 relative overflow-hidden group border-t-4 border-t-emerald-500">
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-1 relative overflow-hidden group border-t-4 border-t-emerald-500">
                 <div class="flex items-center justify-between">
                     <span class="font-bold text-gray-400 text-xs tracking-wider uppercase">Islamic & Arabic</span>
                     <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-50 text-emerald-655">
@@ -59,7 +52,7 @@
                     <p class="text-[11px] text-gray-400 mt-1 font-medium">Arabic & IS specialists</p>
                 </div>
             </div>
-            <div class="bg-white rounded-2xl border border-gray-150 p-5 shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-1 relative overflow-hidden group border-t-4 border-t-blue-500">
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-1 relative overflow-hidden group border-t-4 border-t-blue-500">
                 <div class="flex items-center justify-between">
                     <span class="font-bold text-gray-400 text-xs tracking-wider uppercase">General Academics</span>
                     <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-50 text-blue-655">
@@ -71,7 +64,7 @@
                     <p class="text-[11px] text-gray-400 mt-1 font-medium">Elementary academics</p>
                 </div>
             </div>
-            <div class="bg-white rounded-2xl border border-gray-150 p-5 shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-1 relative overflow-hidden group border-t-4 border-t-amber-500">
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-md transition-all duration-200 hover:-translate-y-1 relative overflow-hidden group border-t-4 border-t-amber-500">
                 <div class="flex items-center justify-between">
                     <span class="font-bold text-gray-400 text-xs tracking-wider uppercase">Faculty Inactive</span>
                     <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-amber-50 text-amber-655">
@@ -86,7 +79,7 @@
         </div>
 
         <!-- Filter bar -->
-        <div class="bg-white rounded-2xl border border-gray-150 p-4 shadow-xs">
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
             <div class="relative w-full sm:max-w-xs">
                 <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                     <i data-lucide="search" class="w-4 h-4"></i>
@@ -151,7 +144,7 @@
         <!-- Register Modal -->
         <div class="admin-modal-overlay flex items-center justify-center fixed inset-0 z-50 bg-slate-955/40 backdrop-blur-xs" 
              x-show="addModal" x-cloak x-transition>
-            <div class="admin-modal-card bg-white rounded-2xl shadow-xl w-full max-w-md p-6 flex flex-col gap-4 border border-slate-150 animate-scaleUp" @click.away="addModal = false">
+            <div class="admin-modal-card bg-white rounded-2xl shadow-xl w-full max-w-md p-6 flex flex-col gap-4 border border-slate-200 animate-scaleUp" @click.away="addModal = false">
                 <div class="admin-modal-header border-b border-slate-100 pb-3 flex items-center justify-between">
                     <div>
                         <span class="admin-modal-title text-base font-extrabold text-slate-955">Register Teacher</span>

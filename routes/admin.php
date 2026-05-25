@@ -101,6 +101,8 @@ Route::name('admin.')->group(function () {
         Route::patch('/settings/discounts', [AdminDiscountSettingsController::class, 'update'])->name('settings.discounts.update');
 
         Route::prefix('academic')->name('academic.')->group(function () {
+            Route::get('/', [AdminAcademicController::class, 'dashboard'])->name('dashboard');
+            Route::get('/dashboard', [AdminAcademicController::class, 'dashboard'])->name('dashboard.index');
             Route::get('/subjects', [AdminAcademicController::class, 'subjects'])->name('subjects');
             Route::get('/curriculum', [AdminAcademicController::class, 'curriculum'])->name('curriculum');
             Route::get('/grade-levels', [AdminAcademicController::class, 'gradeLevels'])->name('grade-levels');

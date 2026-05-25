@@ -1,4 +1,4 @@
-<x-admin-layout title="Section: {{ $section->grade_level }}">
+<x-admin-layout title="Section: {{ $section->section_title }}">
     <div x-data="{
         modalOpen: false, modalMode: 'add', loading: false, errorMsg: '', successMsg: '',
         subjectId: null, subjectName: '', teacherName: '', schedule: '', suggestedList: [],
@@ -77,7 +77,7 @@
                 <div class="absolute right-0 top-0 -mt-2 -mr-2 w-28 h-28 rounded-full bg-slate-50/50 blur-xl"></div>
                 <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h2 class="text-xl font-black text-slate-900 tracking-wide">{{ $section->grade_level }} @if($section->name) — {{ $section->name }} @endif</h2>
+                        <h2 class="text-xl font-black text-slate-900 tracking-wide">{{ $section->section_title }}</h2>
                         @php
                             $isFlex = str_contains($section->learning_mode ?? '', 'Flexible');
                             $modeColor = $isFlex ? 'badge-purple' : 'badge-blue'; 

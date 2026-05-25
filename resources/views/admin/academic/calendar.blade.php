@@ -2,32 +2,25 @@
     <div class="analytics-page flex flex-col gap-6" x-data="{
         addModal: false
     }">
-        <!-- Glassmorphic Hero Header Banner -->
-        <div class="relative overflow-hidden p-6 md:p-8 bg-gradient-to-r from-rose-700 to-red-950 rounded-2xl border border-rose-600/30 shadow-sm text-white">
-            <div class="absolute right-0 top-0 -mt-4 -mr-4 w-56 h-56 rounded-full bg-rose-500/10 blur-3xl"></div>
-            <div class="absolute left-1/3 bottom-0 -mb-8 w-64 h-64 rounded-full bg-red-500/10 blur-3xl"></div>
-            
-            <div class="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <section class="overflow-hidden rounded-3xl p-6 text-white shadow-xl shadow-sky-900/10" style="background: linear-gradient(135deg, #0f172a 0%, #075985 48%, #065f46 100%);">
+            <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold bg-rose-500/20 text-rose-300 rounded-full border border-rose-500/30 backdrop-blur-xs mb-3">
-                        <span class="w-1.5 h-1.5 rounded-full bg-rose-40 animate-pulse"></span>
-                        Academic events
-                    </span>
-                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white">Academic Calendar</h1>
-                    <p class="mt-2 text-sm md:text-base text-rose-100 max-w-2xl font-light">
-                        Schedule upcoming school operations, publish midterm examination dates, and define public holidays.
+                    <span class="inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-sky-50">Academic Workspace</span>
+                    <h1 class="mt-4 text-3xl font-black tracking-tight">Academic Calendar</h1>
+                    <p class="mt-2 max-w-2xl text-sm font-semibold leading-6 text-sky-50/90">
+                        Schedule school operations, examination dates, holidays, and academic events.
                     </p>
                 </div>
-                <button type="button" @click="addModal = true" class="inline-flex items-center gap-2 bg-white hover:bg-rose-50 active:bg-rose-100 text-rose-850 font-bold text-sm px-5 py-2.5 rounded-xl transition-all duration-150 shadow-sm hover:scale-[1.02]">
-                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <button type="button" @click="addModal = true" class="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-sky-800 shadow-lg shadow-sky-900/20 transition hover:bg-sky-50">
+                    <i data-lucide="plus-circle" class="h-4 w-4"></i>
                     Add Event
                 </button>
             </div>
-        </div>
+        </section>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             <!-- Left: Calendar Events List -->
-            <div class="lg:col-span-2 admin-card bg-white border border-gray-250 rounded-2xl shadow-sm overflow-hidden">
+            <div class="lg:col-span-2 admin-card bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 <div class="admin-card-header bg-slate-50/50 border-b border-gray-200 px-5 py-4 flex items-center justify-between">
                     <span class="admin-card-title text-slate-900 font-extrabold text-sm tracking-wide">Upcoming Academic Events</span>
                 </div>
@@ -48,7 +41,7 @@
                                         $day = \Carbon\Carbon::parse($ev['date'])->format('d');
                                         $dayName = \Carbon\Carbon::parse($ev['date'])->format('D');
                                     @endphp
-                                    <div class="flex items-center justify-between p-3.5 bg-slate-50/50 border border-slate-150 rounded-xl hover:bg-slate-50 transition-colors">
+                                    <div class="flex items-center justify-between p-3.5 bg-slate-50/50 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
                                         <div class="flex items-center gap-3">
                                             <div class="w-11 h-11 bg-white border border-slate-200 rounded-xl flex flex-col items-center justify-center shrink-0 shadow-2xs">
                                                 <span class="text-xs font-bold text-slate-400 leading-none uppercase">{{ $dayName }}</span>
@@ -73,7 +66,7 @@
             </div>
 
             <!-- Right: Event Type Legend -->
-            <div class="admin-card bg-white border border-gray-255 rounded-2xl shadow-sm p-6 space-y-4">
+            <div class="admin-card bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-4">
                 <div class="border-b border-slate-100 pb-3">
                     <span class="admin-card-title text-slate-900 font-extrabold text-sm tracking-wide">Category Legend</span>
                 </div>
@@ -101,7 +94,7 @@
         <!-- Add Modal -->
         <div class="admin-modal-overlay flex items-center justify-center fixed inset-0 z-50 bg-slate-955/40 backdrop-blur-xs" 
              x-show="addModal" x-cloak x-transition>
-            <div class="admin-modal-card bg-white rounded-2xl shadow-xl w-full max-w-md p-6 flex flex-col gap-4 border border-slate-150 animate-scaleUp" @click.away="addModal = false">
+            <div class="admin-modal-card bg-white rounded-2xl shadow-xl w-full max-w-md p-6 flex flex-col gap-4 border border-slate-200 animate-scaleUp" @click.away="addModal = false">
                 <div class="admin-modal-header border-b border-slate-100 pb-3 flex items-center justify-between">
                     <div>
                         <span class="admin-modal-title text-base font-extrabold text-slate-955">Add Calendar Event</span>

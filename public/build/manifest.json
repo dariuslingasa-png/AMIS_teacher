@@ -6,7 +6,7 @@
     "isDynamicEntry": true
   },
   "resources/css/app.css": {
-    "file": "assets/app-BaK5c3fk.css",
+    "file": "assets/app-DKdiygih.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -15,11 +15,13 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-V2dtvBa6.js",
+    "file": "assets/app-Qy6oAfbX.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "dynamicImports": [
+      "node_modules/apexcharts/dist/apexcharts.esm.js",
+      "node_modules/apexcharts/dist/apexcharts.esm.js",
       "node_modules/apexcharts/dist/apexcharts.esm.js",
       "node_modules/apexcharts/dist/apexcharts.esm.js"
     ]

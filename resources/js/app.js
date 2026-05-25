@@ -214,9 +214,136 @@ const renderApplicationDashboardCharts = async () => {
     });
 };
 
+const renderFinanceDashboardCharts = async () => {
+    const charts = readJsonData('finance-dashboard-chart-data');
+    if (!charts) return;
+
+    const { default: ApexCharts } = await import('apexcharts');
+
+    mountChart(ApexCharts, '#financePaymentStatusChart', {
+        ...baseChart,
+        chart: { ...baseChart.chart, type: 'donut', height: 300 },
+        series: charts.paymentStatus?.data || [],
+        labels: charts.paymentStatus?.labels || [],
+        colors: [chartTheme.amber, chartTheme.green, chartTheme.red, chartTheme.slate],
+        stroke: { width: 0 },
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '70%',
+                    labels: { show: true, total: { show: true, label: 'Proofs' } },
+                },
+            },
+        },
+    });
+
+    mountChart(ApexCharts, '#financeSoaStatusChart', {
+        ...baseChart,
+        chart: { ...baseChart.chart, type: 'donut', height: 300 },
+        series: charts.soaStatus?.data || [],
+        labels: charts.soaStatus?.labels || [],
+        colors: [chartTheme.green, chartTheme.amber, chartTheme.red],
+        stroke: { width: 0 },
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '70%',
+                    labels: { show: true, total: { show: true, label: 'Accounts' } },
+                },
+            },
+        },
+    });
+
+    mountChart(ApexCharts, '#financeSoaMoneyChart', {
+        ...baseChart,
+        chart: { ...baseChart.chart, type: 'bar', height: 300 },
+        series: [{ name: 'Amount', data: charts.soaMoney?.data || [] }],
+        xaxis: { categories: charts.soaMoney?.labels || [] },
+        yaxis: { labels: { formatter: money } },
+        colors: [chartTheme.green],
+        plotOptions: { bar: { borderRadius: 8, columnWidth: '48%' } },
+        tooltip: { y: { formatter: money } },
+    });
+
+    mountChart(ApexCharts, '#financeCollectionTrendChart', {
+        ...baseChart,
+        chart: { ...baseChart.chart, type: 'area', height: 320 },
+        series: [
+            { name: 'Enrollment Proofs', data: charts.collectionTrend?.enrollment || [] },
+            { name: 'SOA Payments', data: charts.collectionTrend?.soa || [] },
+        ],
+        xaxis: { categories: charts.collectionTrend?.labels || [] },
+        yaxis: { labels: { formatter: money } },
+        colors: [chartTheme.amber, chartTheme.green],
+        stroke: { width: 3, curve: 'smooth' },
+        fill: {
+            type: 'gradient',
+            gradient: { shadeIntensity: 1, opacityFrom: .30, opacityTo: .04 },
+        },
+        tooltip: { y: { formatter: money } },
+    });
+};
+
+const renderAcademicDashboardCharts = async () => {
+    const charts = readJsonData('academic-dashboard-chart-data');
+    if (!charts) return;
+
+    const { default: ApexCharts } = await import('apexcharts');
+
+    mountChart(ApexCharts, '#academicSubjectDivisionChart', {
+        ...baseChart,
+        chart: { ...baseChart.chart, type: 'donut', height: 300 },
+        series: charts.subjectDivision?.data || [],
+        labels: charts.subjectDivision?.labels || [],
+        colors: [chartTheme.blue, chartTheme.green],
+        stroke: { width: 0 },
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '70%',
+                    labels: { show: true, total: { show: true, label: 'Subjects' } },
+                },
+            },
+        },
+    });
+
+    mountChart(ApexCharts, '#academicSectionModeChart', {
+        ...baseChart,
+        chart: { ...baseChart.chart, type: 'bar', height: 300 },
+        series: [{ name: 'Sections', data: charts.sectionMode?.data || [] }],
+        xaxis: { categories: charts.sectionMode?.labels || [] },
+        colors: [chartTheme.green],
+        plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '55%' } },
+    });
+
+    mountChart(ApexCharts, '#academicGradeSubjectsChart', {
+        ...baseChart,
+        chart: { ...baseChart.chart, type: 'bar', height: 300 },
+        series: [{ name: 'Subjects', data: charts.gradeSubjects?.data || [] }],
+        xaxis: { categories: charts.gradeSubjects?.labels || [] },
+        colors: [chartTheme.blue],
+        plotOptions: { bar: { borderRadius: 6, columnWidth: '48%' } },
+    });
+
+    mountChart(ApexCharts, '#academicGradeSectionsChart', {
+        ...baseChart,
+        chart: { ...baseChart.chart, type: 'area', height: 320 },
+        series: [{ name: 'Sections', data: charts.gradeSections?.data || [] }],
+        xaxis: { categories: charts.gradeSections?.labels || [] },
+        colors: [chartTheme.green],
+        stroke: { width: 3, curve: 'smooth' },
+        fill: {
+            type: 'gradient',
+            gradient: { shadeIntensity: 1, opacityFrom: .30, opacityTo: .04 },
+        },
+    });
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     renderDashboardCharts();
     renderApplicationDashboardCharts();
+    renderFinanceDashboardCharts();
+    renderAcademicDashboardCharts();
 
     if (window.lucide) {
         window.lucide.createIcons();

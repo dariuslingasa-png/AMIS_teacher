@@ -1,4 +1,8 @@
 <x-admin-layout title="Finance Management">
+    <script type="application/json" id="finance-dashboard-chart-data">
+        @json($financeCharts ?? [])
+    </script>
+
     <div class="space-y-6">
         <section class="overflow-hidden rounded-3xl p-6 text-white shadow-xl shadow-amber-900/10" style="background: linear-gradient(135deg, #111827 0%, #92400e 48%, #065f46 100%);">
             <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -58,6 +62,13 @@
                 <span class="text-xs font-black uppercase tracking-wider text-slate-400">Unpaid Accounts</span>
                 <p class="mt-2 text-3xl font-black text-rose-700">{{ $stats['soa_unpaid'] }}</p>
             </div>
+        </div>
+
+        <div class="grid gap-6 xl:grid-cols-12">
+            <x-dashboard.chart-card class="xl:col-span-4" title="Payment Proof Status" subtitle="Pending, approved, rejected, and missing receipts" chart="financePaymentStatusChart" />
+            <x-dashboard.chart-card class="xl:col-span-4" title="SOA Account Status" subtitle="Paid, partial, and unpaid accounts" chart="financeSoaStatusChart" />
+            <x-dashboard.chart-card class="xl:col-span-4" title="SOA Money Overview" subtitle="Paid amount against remaining balance" chart="financeSoaMoneyChart" />
+            <x-dashboard.chart-card class="xl:col-span-12" title="7-Day Collection Trend" subtitle="Enrollment proofs and SOA payments by upload/record date" chart="financeCollectionTrendChart" />
         </div>
 
         <div class="grid gap-6 xl:grid-cols-2">

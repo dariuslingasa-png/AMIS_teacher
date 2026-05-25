@@ -9,6 +9,51 @@ use Illuminate\Http\Request;
 
 class AdminAcademicController extends Controller
 {
+    public function dashboard()
+    {
+        $subjects = SubjectModel::orderBy('grade_level')->get();
+        $sections = Section::withCount('students')->get();
+
+        $elementaryGrades = ['Kinder 1', 'Kinder 2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'];
+        $highSchoolGrades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
+        $allGrades = array_merge($elementaryGrades, $highSchoolGrades);
+
+        $academicStats = [
+            'subjects' => $subjects->count(),
+            'sections' => $sections->count(),
+            'students' => $sections->sum('students_count'),
+            'school_year' => '2026-2027',
+        ];
+
+        $academicCharts = [
+            'subjectDivision' => [
+                'labels' => ['Elementary', 'High School'],
+                'data' => [
+                    $subjects->whereIn('grade_level', $elementaryGrades)->count(),
+                    $subjects->whereIn('grade_level', $highSchoolGrades)->count(),
+                ],
+            ],
+            'sectionMode' => [
+                'labels' => ['Face to Face', 'Flexible - 1st Shift', 'Flexible - 2nd Shift'],
+                'data' => [
+                    $sections->filter(fn ($section) => str_contains(strtolower((string) $section->learning_mode), 'face') || strtoupper((string) $section->shift) === 'F2F')->count(),
+                    $sections->filter(fn ($section) => str_contains(strtolower((string) $section->learning_mode), 'flexible') && str_contains(strtolower((string) $section->shift), '1'))->count(),
+                    $sections->filter(fn ($section) => str_contains(strtolower((string) $section->learning_mode), 'flexible') && str_contains(strtolower((string) $section->shift), '2'))->count(),
+                ],
+            ],
+            'gradeSubjects' => [
+                'labels' => $allGrades,
+                'data' => collect($allGrades)->map(fn ($grade) => $subjects->where('grade_level', $grade)->count())->values(),
+            ],
+            'gradeSections' => [
+                'labels' => $allGrades,
+                'data' => collect($allGrades)->map(fn ($grade) => $sections->where('grade_level', $grade)->count())->values(),
+            ],
+        ];
+
+        return view('admin.academic.dashboard', compact('academicStats', 'academicCharts'));
+    }
+
     public function subjects()
     {
         $subjects = SubjectModel::orderBy('grade_level')->get();

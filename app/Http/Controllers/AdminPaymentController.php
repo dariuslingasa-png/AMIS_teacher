@@ -7,6 +7,7 @@ use App\Models\AdminAuditLog;
 use App\Models\EnrollmentApplicant;
 use App\Models\StudentAccount;
 use App\Models\StudentAccountPayment;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -48,7 +49,9 @@ class AdminPaymentController extends Controller
             ->take(6)
             ->get();
 
-        return view('admin.payments.dashboard', compact('stats', 'recentPayments', 'recentSoaPayments', 'openAccounts', 'familyChildrenByPayment', 'familyLabelsByPayment'));
+        $financeCharts = $this->financeCharts($stats);
+
+        return view('admin.payments.dashboard', compact('stats', 'financeCharts', 'recentPayments', 'recentSoaPayments', 'openAccounts', 'familyChildrenByPayment', 'familyLabelsByPayment'));
     }
 
     public function index(Request $request)
@@ -148,6 +151,59 @@ class AdminPaymentController extends Controller
     private function ensurePaymentReviewer(): void
     {
         abort_unless(auth()->user()?->canReviewEnrollmentPayments(), 403);
+    }
+
+    private function financeCharts(array $stats): array
+    {
+        $startDate = Carbon::today()->subDays(6);
+        $labels = collect(range(0, 6))
+            ->map(fn ($day) => $startDate->copy()->addDays($day)->format('M d'))
+            ->values();
+
+        $enrollmentPayments = Payment::whereNotNull('receipt_url')
+            ->where('created_at', '>=', $startDate->copy()->startOfDay())
+            ->get(['amount', 'created_at'])
+            ->groupBy(fn ($payment) => $payment->created_at?->format('M d'));
+
+        $soaPayments = StudentAccountPayment::where('created_at', '>=', $startDate->copy()->startOfDay())
+            ->get(['amount', 'created_at'])
+            ->groupBy(fn ($payment) => $payment->created_at?->format('M d'));
+
+        return [
+            'paymentStatus' => [
+                'labels' => ['Pending Proofs', 'Approved', 'Rejected', 'Missing Proof'],
+                'data' => [
+                    (int) $stats['pending'],
+                    (int) $stats['verified'],
+                    (int) $stats['rejected'],
+                    (int) $stats['missing'],
+                ],
+            ],
+            'soaStatus' => [
+                'labels' => ['Paid', 'Partial', 'Unpaid'],
+                'data' => [
+                    StudentAccount::where('status', 'paid')->count(),
+                    (int) $stats['soa_partial'],
+                    (int) $stats['soa_unpaid'],
+                ],
+            ],
+            'collectionTrend' => [
+                'labels' => $labels,
+                'enrollment' => $labels
+                    ->map(fn ($label) => (float) ($enrollmentPayments->get($label, collect())->sum('amount')))
+                    ->values(),
+                'soa' => $labels
+                    ->map(fn ($label) => (float) ($soaPayments->get($label, collect())->sum('amount')))
+                    ->values(),
+            ],
+            'soaMoney' => [
+                'labels' => ['SOA Paid', 'SOA Balance'],
+                'data' => [
+                    (float) $stats['soa_paid'],
+                    (float) $stats['soa_balance'],
+                ],
+            ],
+        ];
     }
 
     private function familyChildrenByPayment($payments): array

@@ -34,6 +34,7 @@
             'active' => request()->routeIs('admin.ms-teams.*') || request()->routeIs('admin.academic.*'),
             'icon' => 'book-open-check', 'iconClass' => 'text-sky-600', 'headerClass' => 'text-sky-700', 'activeClass' => 'sidebar-link-active-sky', 'title' => 'Academic',
             'links' => [
+                ['Dashboard', 'layout-dashboard', route('admin.academic.dashboard'), request()->routeIs('admin.academic.dashboard') || request()->routeIs('admin.academic.dashboard.index')],
                 ['Subjects', 'book-open', route('admin.academic.subjects'), request()->routeIs('admin.academic.subjects')],
                 ['Curriculum', 'map', route('admin.academic.curriculum'), request()->routeIs('admin.academic.curriculum')],
                 ['Grade Level', 'layers', route('admin.academic.grade-levels'), request()->routeIs('admin.academic.grade-levels')],
