@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\AdminAuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -23,6 +24,15 @@ class AdminUserController extends Controller
         ];
 
         return view('admin.admins.index', compact('admins', 'stats'));
+    }
+
+    public function auditLogs()
+    {
+        $logs = AdminAuditLog::with('user')
+            ->latest()
+            ->paginate(30);
+
+        return view('admin.admins.audit-logs', compact('logs'));
     }
 
     public function edit(User $user)

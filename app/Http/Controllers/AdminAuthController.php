@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdminAuditLog;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class AdminAuthController extends Controller
 {
@@ -22,17 +27,32 @@ class AdminAuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (Auth::attempt($credentials)) {
+        $email = strtolower((string) $credentials['email']);
+        $userForAudit = User::where('email', $email)->first();
+
+        if (Auth::attempt(['email' => $email, 'password' => $credentials['password']])) {
             $user = Auth::user();
 
             if (! $user->hasAdminPortalAccess()) {
+                $this->audit($request, 'login_denied', $user, false, 'User does not have admin portal access.');
                 Auth::logout();
                 return back()->withErrors(['email' => 'Access denied. Admin portal accounts only.']);
             }
 
+            if (($user->account_status ?? 'verified') !== 'verified') {
+                $this->audit($request, 'login_denied', $user, false, 'Account is not verified.');
+                Auth::logout();
+                return back()->withErrors(['email' => 'Account is not verified. Please contact the system administrator.']);
+            }
+
             $request->session()->regenerate();
+            $this->activateSingleSession($request, $user);
+            $this->audit($request, 'login_success', $user, true, 'Admin portal login successful.');
+
             return redirect()->route('admin.dashboard');
         }
+
+        $this->audit($request, 'login_failed', $userForAudit, false, 'Invalid login credentials.', ['email' => $email]);
 
         return back()->withErrors(['email' => 'Invalid credentials.']);
     }
@@ -119,7 +139,7 @@ class AdminAuthController extends Controller
                 'name'           => $userInfo['displayName'] ?? $username,
                 'email'          => strtolower($upn),
                 'username'       => $username,
-                'password'       => bcrypt(\Illuminate\Support\Str::random(32)),
+                'password'       => bcrypt(Str::random(32)),
                 'role'           => 'admin',
                 'account_status' => 'verified',
             ]);
@@ -135,15 +155,67 @@ class AdminAuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
         session(['ms_access_token' => $accessToken]);
+        $this->activateSingleSession($request, $user);
+        $this->audit($request, 'microsoft_login_success', $user, true, 'Microsoft login successful.');
 
         return redirect()->route('admin.dashboard');
     }
 
     public function logout(Request $request)
     {
+        $user = Auth::user();
+        $this->audit($request, 'logout', $user, true, 'Admin portal logout.');
+
+        if ($user && $user->active_admin_session_id === $request->session()->getId()) {
+            $user->forceFill(['active_admin_session_id' => null])->save();
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('admin.login');
+    }
+
+    private function activateSingleSession(Request $request, User $user): void
+    {
+        $sessionId = $request->session()->getId();
+
+        $deletedSessions = 0;
+
+        if (config('session.driver') === 'database') {
+            $deletedSessions = DB::table(config('session.table', 'sessions'))
+                ->where('user_id', $user->id)
+                ->where('id', '!=', $sessionId)
+                ->delete();
+        }
+
+        $user->forceFill([
+            'active_admin_session_id' => $sessionId,
+            'last_admin_login_at' => now(),
+        ])->save();
+
+        if ($deletedSessions > 0) {
+            $this->audit($request, 'previous_session_revoked', $user, true, 'Previous active session was revoked.', [
+                'revoked_sessions' => $deletedSessions,
+            ]);
+        }
+    }
+
+    private function audit(Request $request, string $event, ?User $user, bool $successful, ?string $message = null, array $metadata = []): void
+    {
+        if (! Schema::hasTable('admin_audit_logs')) {
+            return;
+        }
+
+        AdminAuditLog::create([
+            'user_id' => $user?->id,
+            'event' => $event,
+            'email' => $user?->email ?? ($metadata['email'] ?? null),
+            'ip_address' => $request->ip(),
+            'user_agent' => Str::limit((string) $request->userAgent(), 1000, ''),
+            'successful' => $successful,
+            'message' => $message,
+            'metadata' => $metadata ?: null,
+        ]);
     }
 }

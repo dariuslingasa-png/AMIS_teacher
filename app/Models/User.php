@@ -29,6 +29,8 @@ class User extends Authenticatable
         'password',
         'role',
         'access_permissions',
+        'active_admin_session_id',
+        'last_admin_login_at',
         'account_status',
         'email_verified_at',
     ];
@@ -52,6 +54,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_admin_login_at' => 'datetime',
             'password' => 'hashed',
             'access_permissions' => 'array',
         ];

@@ -89,6 +89,7 @@ Route::name('admin.')->group(function () {
         Route::post('/ms-sync/students/{student}', [AdminMsSyncController::class, 'syncStudent'])->name('ms-sync.student');
 
         Route::get('/admins', [AdminUserController::class, 'index'])->name('admins.index');
+        Route::get('/admins/audit-logs', [AdminUserController::class, 'auditLogs'])->name('admins.audit-logs');
         Route::post('/admins', [AdminUserController::class, 'store'])->name('admins.store');
         Route::get('/admins/{user}/edit', [AdminUserController::class, 'edit'])->name('admins.edit');
         Route::patch('/admins/{user}', [AdminUserController::class, 'update'])->name('admins.update');
