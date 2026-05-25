@@ -79,8 +79,11 @@
 @endphp
 
 <x-admin-layout title="Applicant Detail" :breadcrumbs="[['label' => 'Applications', 'href' => route('admin.applications.enrollment')], ['label' => 'Enrollment', 'href' => route('admin.applications.enrollment')], ['label' => $breadcrumbName, 'href' => null]]">
-    <div x-data="{ preview: false, src: '', label: '', pdf: false, zoom: 1, statusOpen: false, statusValue: @js($currentStatus), statusLabel: @js($currentStatusLabel), statusDescriptions: { draft: 'Application is still being drafted.', ready_for_submission: 'Application is complete and ready for submission.', submitted: 'Student successfully submitted application.', under_review: 'Admin is already reviewing the enrollment application.', pending: 'Waiting for additional requirements, payment, or clarification.', approved: 'Enrollment application approved.', rejected: 'Enrollment application declined.' }, openPreview(url, title, isPdf) { this.preview = true; this.src = url; this.label = title; this.pdf = isPdf; this.zoom = 1; }, closePreview() { this.preview = false; this.zoom = 1; }, zoomIn() { this.zoom = Math.min(3, Number((this.zoom + 0.25).toFixed(2))); }, zoomOut() { this.zoom = Math.max(0.5, Number((this.zoom - 0.25).toFixed(2))); }, resetZoom() { this.zoom = 1; }, chooseStatus(value, label) { this.statusValue = value; this.statusLabel = label; this.statusOpen = false; } }"
-         @keydown.escape.window="closePreview(); statusOpen = false">
+    <div x-data="{ preview: false, src: '', label: '', pdf: false, zoom: 1, panning: false, panEl: null, panX: 0, panY: 0, panLeft: 0, panTop: 0, statusOpen: false, statusValue: @js($currentStatus), statusLabel: @js($currentStatusLabel), statusDescriptions: { draft: 'Application is still being drafted.', ready_for_submission: 'Application is complete and ready for submission.', submitted: 'Student successfully submitted application.', under_review: 'Admin is already reviewing the enrollment application.', pending: 'Waiting for additional requirements, payment, or clarification.', approved: 'Enrollment application approved.', rejected: 'Enrollment application declined.' }, openPreview(url, title, isPdf) { this.preview = true; this.src = url; this.label = title; this.pdf = isPdf; this.zoom = 1; }, closePreview() { this.preview = false; this.zoom = 1; this.stopPan(); }, zoomIn() { this.zoom = Math.min(3, Number((this.zoom + 0.25).toFixed(2))); }, zoomOut() { this.zoom = Math.max(0.5, Number((this.zoom - 0.25).toFixed(2))); }, resetZoom() { this.zoom = 1; }, startPan(event) { if (this.pdf) return; const point = event.touches ? event.touches[0] : event; this.panning = true; this.panEl = event.currentTarget; this.panX = point.pageX; this.panY = point.pageY; this.panLeft = this.panEl.scrollLeft; this.panTop = this.panEl.scrollTop; this.panEl.classList.add('cursor-grabbing'); }, movePan(event) { if (!this.panning || !this.panEl) return; event.preventDefault(); const point = event.touches ? event.touches[0] : event; this.panEl.scrollLeft = this.panLeft - (point.pageX - this.panX); this.panEl.scrollTop = this.panTop - (point.pageY - this.panY); }, stopPan() { if (this.panEl) this.panEl.classList.remove('cursor-grabbing'); this.panning = false; this.panEl = null; }, chooseStatus(value, label) { this.statusValue = value; this.statusLabel = label; this.statusOpen = false; } }"
+         x-effect="document.body.classList.toggle('overflow-hidden', preview)"
+         @keydown.escape.window="closePreview(); statusOpen = false"
+         @mouseup.window="stopPan()"
+         @touchend.window="stopPan()">
         <div class="mb-5 flex justify-end">
             <a href="{{ route('admin.applications.enrollment') }}"
                class="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50">
@@ -372,9 +375,14 @@
                         </div>
                         <button type="button" class="text-2xl leading-none text-slate-500" @click="closePreview()">&times;</button>
                     </div>
-                    <div class="preview-body">
+                    <div class="preview-body cursor-grab select-none overflow-auto"
+                         @mousedown="startPan($event)"
+                         @mousemove="movePan($event)"
+                         @mouseleave="stopPan()"
+                         @touchstart.passive="startPan($event)"
+                         @touchmove="movePan($event)">
                         <template x-if="!pdf">
-                            <img :src="src" :alt="label" class="transition-all duration-150" :style="'max-width: none; width: ' + (zoom * 100) + '%;'">
+                            <img :src="src" :alt="label" class="transition-all duration-150" :style="'max-width: none; width: ' + (zoom * 100) + '%; height: auto;'">
                         </template>
                         <template x-if="pdf"><iframe :src="src"></iframe></template>
                     </div>

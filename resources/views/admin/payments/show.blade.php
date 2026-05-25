@@ -21,8 +21,11 @@
 @endphp
 
 <x-admin-layout title="Payment Review">
-    <div x-data="{ preview: false, src: '', label: '', pdf: false, zoom: 1, openPreview(url, title, isPdf) { this.preview = true; this.src = url; this.label = title; this.pdf = isPdf; this.zoom = 1; }, closePreview() { this.preview = false; this.zoom = 1; }, zoomIn() { this.zoom = Math.min(3, Number((this.zoom + 0.25).toFixed(2))); }, zoomOut() { this.zoom = Math.max(0.5, Number((this.zoom - 0.25).toFixed(2))); }, resetZoom() { this.zoom = 1; } }"
+    <div x-data="{ preview: false, src: '', label: '', pdf: false, zoom: 1, panning: false, panEl: null, panX: 0, panY: 0, panLeft: 0, panTop: 0, openPreview(url, title, isPdf) { this.preview = true; this.src = url; this.label = title; this.pdf = isPdf; this.zoom = 1; }, closePreview() { this.preview = false; this.zoom = 1; this.stopPan(); }, zoomIn() { this.zoom = Math.min(3, Number((this.zoom + 0.25).toFixed(2))); }, zoomOut() { this.zoom = Math.max(0.5, Number((this.zoom - 0.25).toFixed(2))); }, resetZoom() { this.zoom = 1; }, startPan(event) { if (this.pdf) return; const point = event.touches ? event.touches[0] : event; this.panning = true; this.panEl = event.currentTarget; this.panX = point.pageX; this.panY = point.pageY; this.panLeft = this.panEl.scrollLeft; this.panTop = this.panEl.scrollTop; this.panEl.classList.add('cursor-grabbing'); }, movePan(event) { if (!this.panning || !this.panEl) return; event.preventDefault(); const point = event.touches ? event.touches[0] : event; this.panEl.scrollLeft = this.panLeft - (point.pageX - this.panX); this.panEl.scrollTop = this.panTop - (point.pageY - this.panY); }, stopPan() { if (this.panEl) this.panEl.classList.remove('cursor-grabbing'); this.panning = false; this.panEl = null; } }"
+         x-effect="document.body.classList.toggle('overflow-hidden', preview)"
          @keydown.escape.window="closePreview()"
+         @mouseup.window="stopPan()"
+         @touchend.window="stopPan()"
          class="space-y-6">
         <section class="overflow-hidden rounded-3xl p-6 text-white shadow-xl shadow-amber-900/10" style="background: linear-gradient(135deg, #111827 0%, #92400e 48%, #065f46 100%);">
             <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -211,12 +214,17 @@
                         </button>
                     </div>
                 </div>
-                <div class="max-h-[78vh] overflow-auto bg-slate-50 p-4">
+                <div class="max-h-[78vh] cursor-grab select-none overflow-auto bg-slate-50 p-4"
+                     @mousedown="startPan($event)"
+                     @mousemove="movePan($event)"
+                     @mouseleave="stopPan()"
+                     @touchstart.passive="startPan($event)"
+                     @touchmove="movePan($event)">
                     <template x-if="pdf">
                         <iframe :src="src" class="h-[75vh] w-full rounded-2xl bg-white"></iframe>
                     </template>
                     <template x-if="!pdf">
-                        <img :src="src" :alt="label" class="mx-auto rounded-2xl object-contain transition-all duration-150" :style="'max-width: none; width: ' + (zoom * 100) + '%;'">
+                        <img :src="src" :alt="label" class="mx-auto rounded-2xl object-contain transition-all duration-150" :style="'max-width: none; width: ' + (zoom * 100) + '%; height: auto;'">
                     </template>
                 </div>
             </div>
