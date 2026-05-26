@@ -181,12 +181,28 @@ class EnrollmentReviewService
     {
         $applicant->loadMissing('payment');
 
-        if (!$applicant->payment || blank($applicant->payment->receipt_url)) {
-            throw ValidationException::withMessages(['status' => 'NOT ALLOW: enrollment fee payment proof is required before approval.']);
+        $hasVerifiedPayment = false;
+        if ($applicant->payment && $applicant->payment->status === 'verified') {
+            $hasVerifiedPayment = true;
+        } else {
+            $familyId = $applicant->family_application_id ?: $applicant->id;
+            $siblingPayment = \App\Models\Payment::whereHas('applicant', function ($query) use ($familyId) {
+                $query->where(function ($q) use ($familyId) {
+                    $q->where('family_application_id', $familyId)
+                      ->orWhere('id', $familyId);
+                });
+            })
+            ->where('status', 'verified')
+            ->first();
+
+            if ($siblingPayment) {
+                $hasVerifiedPayment = true;
+                $applicant->setRelation('payment', $siblingPayment);
+            }
         }
 
-        if ($applicant->payment->status !== 'verified') {
-            throw ValidationException::withMessages(['status' => 'NOT ALLOW: enrollment fee must be verified before approval.']);
+        if (!$hasVerifiedPayment) {
+            throw ValidationException::withMessages(['status' => 'NOT ALLOW: enrollment fee payment proof is required before approval.']);
         }
     }
 

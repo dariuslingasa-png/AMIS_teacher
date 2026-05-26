@@ -137,8 +137,32 @@ class AdminPaymentController extends Controller
 
         if ($payment->applicant) {
             $payment->applicant->setRelation('payment', $payment);
-            if ($payment->applicant->status !== 'approved') {
-                $approvalMessage = app(EnrollmentApprovalService::class)->approve($payment->applicant);
+            
+            $applicant = $payment->applicant;
+            $familyChildren = collect();
+            if ($applicant->family_application_id) {
+                $familyChildren = EnrollmentApplicant::where('family_application_id', $applicant->family_application_id)->get();
+            } else {
+                $familyChildren = EnrollmentApplicant::where('user_id', $applicant->user_id)->get();
+            }
+
+            $approvedNames = [];
+            foreach ($familyChildren as $sibling) {
+                if ($sibling->status !== 'approved' && in_array($sibling->status, ['submitted', 'under_review', 'pending', 'ready_for_submission'], true)) {
+                    $sibling->setRelation('payment', $payment);
+                    try {
+                        app(EnrollmentApprovalService::class)->approve($sibling);
+                        $approvedNames[] = trim($sibling->first_name . ' ' . $sibling->last_name);
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::error("Failed to auto-approve sibling {$sibling->id}: " . $e->getMessage());
+                    }
+                }
+            }
+
+            if (count($approvedNames) > 0) {
+                $approvalMessage = "Payment verified successfully. Auto-approved: " . implode(', ', $approvedNames) . ".";
+            } else if ($payment->applicant->status === 'approved') {
+                $approvalMessage = 'Payment verified. Student already onboarded.';
             }
         }
 
