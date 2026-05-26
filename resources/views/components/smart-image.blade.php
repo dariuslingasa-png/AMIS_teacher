@@ -2,39 +2,34 @@
     'src' => null,
     'alt' => '',
     'fallbackInitials' => null,
-    'width' => 'w-10',
-    'height' => 'h-10',
-    'rounded' => 'rounded-md',
-    'class' => '',
-    'imgClass' => '',
+    'size' => '40',
+    'rounded' => 'rounded-lg',
     'containerClass' => '',
     'eager' => true,
 ])
 
 @php
-    $sizeClass = $width . ' ' . $height;
-    $loadingAttr = $eager ? 'eager' : 'lazy';
-    $decodingAttr = $eager ? 'async' : 'auto';
+    $px = (int) $size;
     $initials = $fallbackInitials ?: collect(explode(' ', $alt))->filter()->take(2)->map(fn ($p) => \Illuminate\Support\Str::substr($p, 0, 1))->join('');
 @endphp
 
-<div class="smart-image-wrap {{ $sizeClass }} {{ $rounded }} {{ $containerClass }}" {{ $attributes->except(['src', 'alt', 'fallbackInitials', 'width', 'height', 'rounded', 'class', 'imgClass', 'containerClass', 'eager']) }}>
+<div class="shrink-0 overflow-hidden bg-gray-100 flex items-center justify-center {{ $rounded }} {{ $containerClass }}" style="width:{{ $px }}px;height:{{ $px }}px;">
     @if ($src)
-        <div class="smart-image-skeleton {{ $sizeClass }} {{ $rounded }}"></div>
         <img
             src="{{ $src }}"
             alt="{{ $alt }}"
-            loading="{{ $loadingAttr }}"
-            decoding="{{ $decodingAttr }}"
-            class="smart-image {{ $sizeClass }} {{ $rounded }} {{ $imgClass }} {{ $class }}"
-            onload="this.classList.add('smart-image-loaded');this.previousElementSibling.style.display='none'"
-            onerror="this.style.display='none';this.previousElementSibling.style.display='none';this.nextElementSibling.style.display='flex'"
+            class="w-full h-full object-cover block"
+            width="{{ $px }}"
+            height="{{ $px }}"
+            loading="{{ $eager ? 'eager' : 'lazy' }}"
+            decoding="{{ $eager ? 'async' : 'auto' }}"
+            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
         >
-        <span class="smart-image-fallback {{ $sizeClass }} {{ $rounded }}" style="display:none">
+        <span class="w-full h-full items-center justify-center bg-slate-100 text-xs font-extrabold text-slate-600 uppercase" style="display:none">
             {{ $initials ?: 'NA' }}
         </span>
     @else
-        <span class="smart-image-fallback {{ $sizeClass }} {{ $rounded }}" style="display:flex">
+        <span class="w-full h-full flex items-center justify-center bg-slate-100 text-xs font-extrabold text-slate-600 uppercase">
             {{ $initials ?: 'NA' }}
         </span>
     @endif

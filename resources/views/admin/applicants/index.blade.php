@@ -195,15 +195,14 @@
                                     <td class="px-5 py-4">
                                         <span class="font-extrabold uppercase tracking-wide {{ $accent['text'] }}">Child {{ $index + 1 }}</span>
                                     </td>
-                                    <td class="px-5 py-4">
+                                    <td class="px-5 py-4 align-middle">
                                         <div class="flex items-center gap-3">
                                             <x-smart-image
                                                 :src="$photoUrl"
                                                 :alt="$childName"
                                                 :fallback-initials="$childInitials ?: 'ST'"
-                                                width="w-10"
-                                                height="h-10"
-                                                rounded="rounded-md"
+                                                size="40"
+                                                rounded="rounded-lg"
                                                 :eager="true"
                                             />
                                             <div>

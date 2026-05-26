@@ -219,11 +219,8 @@
                     <span class="application-number-pill">Application #{{ str_pad($applicant->id, 4, '0', STR_PAD_LEFT) }}</span>
                     <button type="button" class="applicant-photo" @if ($photoUrl) @click="openPreview('{{ $photoUrl }}', '2x2 Photo', false)" @endif>
                         @if ($photoUrl)
-                            <div class="smart-preview-wrap">
-                                <div class="smart-preview-skeleton"></div>
-                                <img src="{{ $photoUrl }}" alt="2x2 Photo" loading="eager" decoding="async" class="smart-preview-img" onload="this.classList.add('smart-image-loaded');this.previousElementSibling.style.display='none'" onerror="this.style.display='none';this.previousElementSibling.style.display='none';this.nextElementSibling.style.display='flex'">
-                                <span class="smart-preview-fallback" style="display:none">NO PHOTO</span>
-                            </div>
+                            <img src="{{ $photoUrl }}" alt="2x2 Photo" class="w-full h-full object-cover block" loading="eager" decoding="async" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                            <span class="w-full h-full items-center justify-center text-xs font-extrabold" style="display:none">NO PHOTO</span>
                         @else
                             NO PHOTO
                         @endif
