@@ -15,7 +15,7 @@ class AdminStudentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Student::with('applicant.user')->latest();
+        $query = Student::with(['applicant.user', 'studentSection.section'])->latest();
 
         if ($request->filled('search')) {
             $s = $request->search;
