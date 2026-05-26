@@ -21,7 +21,111 @@
 @endphp
 
 <x-admin-layout title="Payment Review">
-    <div x-data="{ preview: false, src: '', label: '', pdf: false, zoom: 1, panning: false, panEl: null, panX: 0, panY: 0, panLeft: 0, panTop: 0, openPreview(url, title, isPdf) { this.preview = true; this.src = url; this.label = title; this.pdf = isPdf; this.zoom = 1; }, closePreview() { this.preview = false; this.zoom = 1; this.stopPan(); }, zoomIn() { this.zoom = Math.min(3, Number((this.zoom + 0.25).toFixed(2))); }, zoomOut() { this.zoom = Math.max(0.5, Number((this.zoom - 0.25).toFixed(2))); }, resetZoom() { this.zoom = 1; }, startPan(event) { if (this.pdf) return; const point = event.touches ? event.touches[0] : event; this.panning = true; this.panEl = event.currentTarget; this.panX = point.pageX; this.panY = point.pageY; this.panLeft = this.panEl.scrollLeft; this.panTop = this.panEl.scrollTop; this.panEl.classList.add('cursor-grabbing'); }, movePan(event) { if (!this.panning || !this.panEl) return; event.preventDefault(); const point = event.touches ? event.touches[0] : event; this.panEl.scrollLeft = this.panLeft - (point.pageX - this.panX); this.panEl.scrollTop = this.panTop - (point.pageY - this.panY); }, stopPan() { if (this.panEl) this.panEl.classList.remove('cursor-grabbing'); this.panning = false; this.panEl = null; } }"
+        <div x-data="{
+             preview: false,
+             src: '',
+             label: '',
+             pdf: false,
+             zoom: 1,
+             panning: false,
+             panEl: null,
+             panX: 0,
+             panY: 0,
+             panLeft: 0,
+             panTop: 0,
+             openPreview(url, title, isPdf) {
+                 this.preview = true;
+                 this.src = url;
+                 this.label = title;
+                 this.pdf = isPdf;
+                 this.zoom = 1;
+             },
+             closePreview() {
+                 this.preview = false;
+                 this.zoom = 1;
+                 this.stopPan();
+             },
+             zoomIn() {
+                 this.zoom = Math.min(3, Number((this.zoom + 0.1).toFixed(2)));
+             },
+             zoomOut() {
+                 this.zoom = Math.max(0.1, Number((this.zoom - 0.1).toFixed(2)));
+             },
+             resetZoom() {
+                 this.zoom = 1;
+             },
+             startPan(event) {
+                 if (this.pdf) return;
+                 const point = event.touches ? event.touches[0] : event;
+                 this.panning = true;
+                 this.panEl = event.currentTarget;
+                 this.panX = point.pageX;
+                 this.panY = point.pageY;
+                 this.panLeft = this.panEl.scrollLeft;
+                 this.panTop = this.panEl.scrollTop;
+                 this.panEl.classList.add('cursor-grabbing');
+             },
+             movePan(event) {
+                 if (!this.panning || !this.panEl) return;
+                 event.preventDefault();
+                 const point = event.touches ? event.touches[0] : event;
+                 this.panEl.scrollLeft = this.panLeft - (point.pageX - this.panX);
+                 this.panEl.scrollTop = this.panTop - (point.pageY - this.panY);
+             },
+             stopPan() {
+                 if (this.panEl) this.panEl.classList.remove('cursor-grabbing');
+                 this.panning = false;
+                 this.panEl = null;
+             },
+             async downloadPdf() {
+                 if (!this.src) return;
+                 const url = this.src;
+                 const filename = (this.label || 'document').replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
+                 if (this.pdf) {
+                     const link = document.createElement('a');
+                     link.href = url;
+                     link.download = filename;
+                     document.body.appendChild(link);
+                     link.click();
+                     document.body.removeChild(link);
+                     return;
+                 }
+                 try {
+                     const btn = document.getElementById('download-pdf-btn');
+                     const originalText = btn.innerHTML;
+                     btn.innerHTML = '<i data-lucide=\'loader-2\' class=\'h-3.5 w-3.5 animate-spin\'></i> Converting...';
+                     if (window.lucide) window.lucide.createIcons();
+                     const { jsPDF } = window.jspdf;
+                     const img = new Image();
+                     img.crossOrigin = 'Anonymous';
+                     img.src = url;
+                     img.onload = () => {
+                         const pdf = new jsPDF({
+                             orientation: img.width > img.height ? 'landscape' : 'portrait',
+                             unit: 'px',
+                             format: [img.width, img.height]
+                         });
+                         pdf.addImage(img, 'JPEG', 0, 0, img.width, img.height);
+                         pdf.save(filename);
+                         btn.innerHTML = originalText;
+                         if (window.lucide) window.lucide.createIcons();
+                     };
+                     img.onerror = () => {
+                         const link = document.createElement('a');
+                         link.href = url;
+                         link.download = this.label || 'image';
+                         document.body.appendChild(link);
+                         link.click();
+                         document.body.removeChild(link);
+                         btn.innerHTML = originalText;
+                         if (window.lucide) window.lucide.createIcons();
+                     };
+                 } catch (e) {
+                     console.error(e);
+                     window.open(url, '_blank');
+                 }
+             }
+         }"
          x-effect="document.body.classList.toggle('overflow-hidden', preview)"
          @keydown.escape.window="closePreview()"
          @mouseup.window="stopPan()"
@@ -89,7 +193,10 @@
                             <tbody class="divide-y divide-slate-100">
                                 @forelse ($invoiceChildren as $index => $child)
                                     <tr>
-                                        <td class="py-4 pr-4 font-black uppercase text-slate-950">{{ $index + 1 }}. {{ $child->full_name ?: 'Applicant' }}</td>
+                                        <td class="py-4 pr-4 font-black uppercase text-slate-950">
+                                            <div>{{ $index + 1 }}. {{ $child->full_name ?: 'Applicant' }}</div>
+                                            <div class="text-[10px] font-semibold text-slate-400 mt-0.5 tracking-wider">APPLICANT #{{ str_pad((string) $child->id, 4, '0', STR_PAD_LEFT) }}</div>
+                                        </td>
                                         <td class="px-4 py-4 font-black uppercase text-slate-700">{{ $child->grade_level ?? 'GRADE PENDING' }}</td>
                                         <td class="px-4 py-4 font-black uppercase text-slate-700">{{ $learningModeLabel($child->learning_mode ?? null) }}</td>
                                         <td class="py-4 pl-4 text-right text-base font-black text-slate-950">PHP {{ number_format($invoiceChildAmount, 2) }}</td>
@@ -166,21 +273,21 @@
                                             </div>
                                         </dl>
                                     </div>
-                                    @if ($childPayment && $canReviewPayments)
-                                        <div class="grid gap-3 border-t border-slate-200 bg-white p-4 sm:grid-cols-2">
-                                            <form method="POST" action="{{ route('admin.payments.verify', $childPayment) }}">
+                                    @if ($childPayment && $canReviewPayments && $childPayment->status === 'pending')
+                                        <div class="border-t border-slate-200 bg-white p-4 space-y-4">
+                                            <form method="POST" action="{{ route('admin.payments.verify', $childPayment) }}" class="space-y-3">
                                                 @csrf
                                                 @method('PATCH')
-                                                <button class="w-full rounded-2xl bg-emerald-600 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700">
-                                                    APPROVE
+                                                <button class="w-full rounded-2xl bg-emerald-600 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700">
+                                                    APPROVE PAYMENT
                                                 </button>
                                             </form>
                                             <form method="POST" action="{{ route('admin.payments.reject', $childPayment) }}">
                                                 @csrf
                                                 @method('PATCH')
                                                 <input type="hidden" name="remarks" value="Payment proof rejected by Sir Cabel.">
-                                                <button class="w-full rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-black uppercase tracking-[0.18em] text-rose-700 shadow-lg shadow-rose-100 transition hover:border-rose-600 hover:bg-rose-600 hover:text-white">
-                                                    REJECT
+                                                <button class="w-full rounded-2xl border border-rose-200 bg-rose-50 px-5 py-3 text-xs font-black uppercase tracking-[0.18em] text-rose-700 shadow-lg shadow-rose-100 transition hover:border-rose-600 hover:bg-rose-600 hover:text-white">
+                                                    REJECT PAYMENT
                                                 </button>
                                             </form>
                                         </div>
@@ -209,6 +316,9 @@
                             <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100" @click="zoomIn()">+</button>
                             <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500 shadow-sm transition hover:bg-slate-100" @click="resetZoom()">Reset</button>
                         </div>
+                        <button id="download-pdf-btn" type="button" class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-emerald-700 shadow-sm transition hover:bg-emerald-100 flex items-center gap-1 cursor-pointer" @click="downloadPdf()">
+                            <i data-lucide="download" class="h-3.5 w-3.5"></i> Download PDF
+                        </button>
                         <button type="button" class="rounded-full bg-slate-100 p-2 text-slate-500 hover:bg-slate-200" @click="closePreview()">
                             <i data-lucide="x" class="h-5 w-5"></i>
                         </button>
@@ -230,4 +340,5 @@
             </div>
         </div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </x-admin-layout>

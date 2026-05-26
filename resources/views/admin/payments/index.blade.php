@@ -20,15 +20,26 @@
                         $familyLabel = $family['family_label'];
                         $familyStatus = $family['status'];
                         $statusColor = $familyStatus === 'verified' ? 'green' : ($familyStatus === 'rejected' ? 'red' : 'yellow');
+
+                        // Dynamic Purpose Calculation
+                        $amountPerChild = 4000;
+                        $expectedDownpayment = $children->count() * $amountPerChild;
+                        $isTuition = ((float)$family['amount'] > $expectedDownpayment);
+                        $purposeLabel = $isTuition ? 'Tuition Fee' : 'Enrollment Fee';
+                        $purposeBadge = $isTuition ? 'bg-indigo-50 text-indigo-700 border-indigo-100/50' : 'bg-sky-50 text-sky-700 border-sky-100/50';
                     @endphp
                     <tr>
                         <td>
                             <div class="font-black text-slate-950">{{ $familyLabel }}</div>
-                            <div class="mt-1 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                FAMILY #{{ str_pad((string) $familyNo, 4, '0', STR_PAD_LEFT) }}
+                            <div class="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                <span>FAMILY #{{ str_pad((string) $familyNo, 4, '0', STR_PAD_LEFT) }}</span>
                                 @if ($children->count() > 1)
-                                    &middot; {{ $children->count() }} CHILDREN
+                                    <span>&middot; {{ $children->count() }} CHILDREN</span>
                                 @endif
+                                <span>&middot;</span>
+                                <span class="rounded px-2 py-0.5 text-[9px] font-black uppercase tracking-wide border {{ $purposeBadge }}">
+                                    {{ $purposeLabel }}
+                                </span>
                             </div>
                         </td>
                         <td>

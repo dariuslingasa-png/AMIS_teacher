@@ -19,7 +19,7 @@
                 <h1 class="mt-1 text-xl font-bold text-slate-950">Student Records</h1>
                 <p class="mt-1 text-sm text-slate-500">View enrolled student accounts, credentials, and synchronized teams channels.</p>
             </div>
-            <a href="{{ route('admin.dashboard') }}" class="inline-flex h-10 items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100">
+            <a href="{{ route('admin.students.dashboard') }}" class="inline-flex h-10 items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-4 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100">
                 <i data-lucide="layout-dashboard" class="h-4 w-4"></i>
                 Dashboard
             </a>
@@ -91,7 +91,7 @@
                                 <td class="px-5 py-4">
                                     <div class="font-bold text-slate-700">{{ $student->grade_level ?? '-' }}</div>
                                     <div class="mt-0.5 text-xxs font-semibold uppercase text-slate-400">
-                                        {{ $student->studentSection->section->name ?? 'No Section' }}
+                                        {{ $student->studentSection->section->official_name ?? $student->studentSection->section->name ?? 'No Section' }}
                                     </div>
                                 </td>
 

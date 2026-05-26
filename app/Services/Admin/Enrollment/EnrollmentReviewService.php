@@ -83,7 +83,7 @@ class EnrollmentReviewService
             'payment' => $payment,
             'hasPaymentProof' => $hasPaymentProof,
             'paymentOk' => $paymentOk,
-            'canApprove' => $allDocsOk && $paymentOk,
+            'canApprove' => $paymentOk,
             'alreadyFinal' => in_array($applicant->status, ['approved', 'rejected'], true),
             'studentAddress' => $this->studentAddress($applicant),
             'homeAddress' => $this->homeAddress($applicant),
@@ -179,19 +179,29 @@ class EnrollmentReviewService
 
     public function assertReadyForApproval(EnrollmentApplicant $applicant): void
     {
-        if (!$this->areAllDocumentsApproved($applicant)) {
-            throw ValidationException::withMessages(['status' => 'NOT ALLOW: documents must be approved before approval.']);
-        }
-
         $applicant->loadMissing('payment');
 
         if (!$applicant->payment || blank($applicant->payment->receipt_url)) {
-            throw ValidationException::withMessages(['status' => 'NOT ALLOW: payment proof must be uploaded before approval.']);
+            throw ValidationException::withMessages(['status' => 'NOT ALLOW: enrollment fee payment proof is required before approval.']);
         }
 
         if ($applicant->payment->status !== 'verified') {
-            throw ValidationException::withMessages(['status' => 'NOT ALLOW: payment proof must be verified before approval.']);
+            throw ValidationException::withMessages(['status' => 'NOT ALLOW: enrollment fee must be verified before approval.']);
         }
+    }
+
+    public function missingDocumentRemarks(EnrollmentApplicant $applicant): ?string
+    {
+        $statuses = $applicant->document_statuses ?? [];
+        $missing = collect($this->getRequiredDocuments($applicant))
+            ->filter(fn (string $label, string $key) => ($statuses[$key] ?? 'pending') !== 'approved')
+            ->values();
+
+        if ($missing->isEmpty()) {
+            return null;
+        }
+
+        return 'Approved with missing/pending documents: '.$missing->join(', ').'. Please follow up and complete document verification.';
     }
 
     private function documentMap(EnrollmentApplicant $applicant): array

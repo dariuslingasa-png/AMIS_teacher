@@ -7,6 +7,7 @@ use App\Models\AdminAuditLog;
 use App\Models\EnrollmentApplicant;
 use App\Models\StudentAccount;
 use App\Models\StudentAccountPayment;
+use App\Services\Admin\Enrollment\EnrollmentApprovalService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -105,7 +106,7 @@ class AdminPaymentController extends Controller
     }
 
 
-    public function verify(Payment $payment)
+    public function verify(Request $request, Payment $payment)
     {
         $this->ensurePaymentReviewer();
 
@@ -113,8 +114,14 @@ class AdminPaymentController extends Controller
             return back()->withErrors(['status' => 'Cannot verify: payment proof is missing.']);
         }
 
+        $orNumber = $request->input('or_number');
+        if (blank($orNumber)) {
+            $orNumber = '7010' . rand(1000, 9999);
+        }
+
         $payment->update([
             'status'      => 'verified',
+            'or_number'   => $orNumber,
             'verified_at' => now(),
         ]);
 
@@ -125,7 +132,17 @@ class AdminPaymentController extends Controller
             'method' => $payment->method,
         ]);
 
-        return back()->with('success', 'Payment verified successfully.');
+        $approvalMessage = null;
+        $payment->loadMissing('applicant.student');
+
+        if ($payment->applicant) {
+            $payment->applicant->setRelation('payment', $payment);
+            if ($payment->applicant->status !== 'approved') {
+                $approvalMessage = app(EnrollmentApprovalService::class)->approve($payment->applicant);
+            }
+        }
+
+        return back()->with('success', $approvalMessage ?: 'Payment verified successfully.');
     }
 
     public function reject(Request $request, Payment $payment)
@@ -137,6 +154,12 @@ class AdminPaymentController extends Controller
         $payment->update([
             'status'  => 'rejected',
             'remarks' => $request->remarks,
+        ]);
+
+        $payment->loadMissing('applicant');
+        $payment->applicant?->update([
+            'status' => 'rejected',
+            'review_remarks' => $request->remarks,
         ]);
 
         AdminAuditLog::record('payment_rejected', true, 'Payment proof rejected.', [

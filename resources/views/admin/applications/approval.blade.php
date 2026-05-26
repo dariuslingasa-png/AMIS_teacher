@@ -14,9 +14,9 @@
             return match (true) {
                 $applicant->status === 'approved' => ['Ready', 'green', 'Approved enrollment'],
                 $applicant->status === 'rejected' => ['Blocked', 'red', 'Rejected application'],
-                $docsReady && $paymentReady => ['Ready', 'green', 'Ready for final approval'],
-                $docsReady => ['Pending', 'yellow', 'Waiting for verified payment'],
-                default => ['Needs Review', 'yellow', 'Documents still need review'],
+                $paymentReady && $docsReady => ['Ready', 'green', 'Ready for final approval'],
+                $paymentReady => ['Ready', 'green', 'Payment verified; approve with document remarks'],
+                default => ['Blocked', 'red', 'Enrollment fee payment is prior'],
             };
         };
     @endphp

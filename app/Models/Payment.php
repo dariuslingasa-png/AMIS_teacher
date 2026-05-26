@@ -12,6 +12,7 @@ class Payment extends Model
         'enrollment_applicant_id',
         'method',
         'reference_no',
+        'or_number',
         'amount',
         'receipt_url',
         'status',

@@ -63,6 +63,9 @@ Route::name('admin.')->group(function () {
         });
 
         Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
+        Route::get('/students/dashboard', [AdminStudentController::class, 'dashboard'])->name('students.dashboard');
+        Route::get('/students/dashboard/sections/{section}/roster-print', [AdminStudentController::class, 'rosterPrint'])->name('students.roster-print');
+        Route::get('/students/history', [AdminStudentController::class, 'history'])->name('students.history');
         Route::get('/students/{student}', [AdminStudentController::class, 'show'])->name('students.show');
         Route::post('/students/{student}/resend', [AdminStudentController::class, 'resendCredentials'])->name('students.resend');
 
@@ -105,11 +108,12 @@ Route::name('admin.')->group(function () {
             Route::get('/dashboard', [AdminAcademicController::class, 'dashboard'])->name('dashboard.index');
             Route::get('/subjects', [AdminAcademicController::class, 'subjects'])->name('subjects');
             Route::get('/curriculum', [AdminAcademicController::class, 'curriculum'])->name('curriculum');
-            Route::get('/grade-levels', [AdminAcademicController::class, 'gradeLevels'])->name('grade-levels');
+            Route::get('/grade-levels', [AdminAcademicController::class, 'curriculum'])->name('grade-levels');
             Route::get('/teachers', [AdminAcademicController::class, 'teachers'])->name('teachers');
             Route::get('/schedules', [AdminAcademicController::class, 'schedules'])->name('schedules');
-            Route::get('/school-years', [AdminAcademicController::class, 'schoolYears'])->name('school-years');
-            Route::get('/calendar', [AdminAcademicController::class, 'calendar'])->name('calendar');
+            Route::get('/school-years', [AdminAcademicController::class, 'curriculum'])->name('school-years');
+            Route::get('/calendar', [AdminAcademicController::class, 'curriculum'])->name('calendar');
+            Route::get('/operations', [AdminAcademicController::class, 'operations'])->name('operations');
         });
 
         Route::prefix('ms-teams')->name('ms-teams.')->group(function () {

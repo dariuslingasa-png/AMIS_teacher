@@ -24,10 +24,9 @@
             'active' => request()->routeIs('admin.students.*'),
             'icon' => 'users', 'iconClass' => 'text-violet-600', 'headerClass' => 'text-violet-700', 'activeClass' => 'sidebar-link-active-violet', 'title' => 'Students',
             'links' => [
-                ['Student Records', 'user-check', route('admin.students.index'), request()->routeIs('admin.students.index')],
-                ['Profiles', 'id-card', route('admin.students.index'), request()->routeIs('admin.students.show')],
-                ['Enrollment History', 'history', route('admin.students.index'), false],
-                ['Documents', 'folder-open', route('admin.students.index'), false],
+                ['Dashboard', 'layout-dashboard', route('admin.students.dashboard'), request()->routeIs('admin.students.dashboard')],
+                ['Student Records', 'user-check', route('admin.students.index'), request()->routeIs('admin.students.index') || request()->routeIs('admin.students.show')],
+                ['Enrollment History', 'history', route('admin.students.history'), request()->routeIs('admin.students.history')],
             ],
         ],
         [
@@ -35,14 +34,11 @@
             'icon' => 'book-open-check', 'iconClass' => 'text-sky-600', 'headerClass' => 'text-sky-700', 'activeClass' => 'sidebar-link-active-sky', 'title' => 'Academic',
             'links' => [
                 ['Dashboard', 'layout-dashboard', route('admin.academic.dashboard'), request()->routeIs('admin.academic.dashboard') || request()->routeIs('admin.academic.dashboard.index')],
+                ['Curriculum', 'map', route('admin.academic.curriculum'), request()->routeIs('admin.academic.curriculum') || request()->routeIs('admin.academic.grade-levels') || request()->routeIs('admin.academic.school-years') || request()->routeIs('admin.academic.calendar')],
                 ['Subjects', 'book-open', route('admin.academic.subjects'), request()->routeIs('admin.academic.subjects')],
-                ['Curriculum', 'map', route('admin.academic.curriculum'), request()->routeIs('admin.academic.curriculum')],
-                ['Grade Level', 'layers', route('admin.academic.grade-levels'), request()->routeIs('admin.academic.grade-levels')],
-                ['Sections', 'users-round', route('admin.ms-teams.index'), request()->routeIs('admin.ms-teams.*')],
+                ['Class Management', 'users-round', route('admin.academic.schedules'), request()->routeIs('admin.academic.schedules') || request()->routeIs('admin.ms-teams.*')],
                 ['Teachers', 'contact-2', route('admin.academic.teachers'), request()->routeIs('admin.academic.teachers')],
-                ['Class Schedule', 'calendar-days', route('admin.academic.schedules'), request()->routeIs('admin.academic.schedules')],
-                ['School Year / Semester', 'calendar-range', route('admin.academic.school-years'), request()->routeIs('admin.academic.school-years')],
-                ['Academic Calendar', 'calendar', route('admin.academic.calendar'), request()->routeIs('admin.academic.calendar')],
+                ['Operations', 'activity', route('admin.academic.operations'), request()->routeIs('admin.academic.operations')],
             ],
         ],
         [

@@ -9,7 +9,7 @@ class StudentAccountPayment extends Model
 {
     protected $fillable = [
         'student_account_id', 'student_id', 'soa_monthly_billing_id',
-        'method', 'reference_no', 'checked_by', 'account_received',
+        'method', 'reference_no', 'or_number', 'checked_by', 'account_received',
         'amount', 'receipt_url', 'status', 'remarks',
         'paid_at', 'verified_at',
     ];

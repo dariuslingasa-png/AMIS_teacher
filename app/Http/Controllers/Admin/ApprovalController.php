@@ -20,6 +20,15 @@ class ApprovalController extends Controller
     {
         $this->ensureApplicationReviewer();
 
+        if ($request->input('status') === 'approved') {
+            $message = $this->approvalService->approve($applicant);
+            AdminAuditLog::record('application_approved', true, 'Enrollment application approved.', [
+                'applicant_id' => $applicant->id,
+            ]);
+
+            return back()->with('success', $message);
+        }
+
         $this->reviewService->updateStatus($request, $applicant);
         AdminAuditLog::record('application_status_updated', true, 'Application review status updated.', [
             'applicant_id' => $applicant->id,

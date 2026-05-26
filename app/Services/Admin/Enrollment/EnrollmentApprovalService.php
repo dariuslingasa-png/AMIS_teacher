@@ -38,9 +38,11 @@ class EnrollmentApprovalService
         $this->enrollInTeams($student, $msUserId, $graph);
         $this->generateSoa($student, $applicant);
 
+        $documentRemarks = $this->reviewService->missingDocumentRemarks($applicant);
+
         $applicant->update([
             'status' => 'approved',
-            'review_remarks' => null,
+            'review_remarks' => $documentRemarks,
         ]);
 
         $this->sendOnboardingIfPossible($applicant, $student, $tempPassword, $msError);
@@ -66,12 +68,12 @@ class EnrollmentApprovalService
     private function generateSchoolEmail(EnrollmentApplicant $applicant, string $studentNumber): array
     {
         $lastName = strtolower(preg_replace('/\s+/', '', (string) $applicant->last_name));
-        $mailNick = $studentNumber.$lastName;
+        $mailNick = $lastName.'.'.$studentNumber;
         $schoolEmail = $mailNick.'@amis.edu.ph';
         $suffix = 1;
 
         while (Student::where('school_email', $schoolEmail)->exists()) {
-            $mailNick = $studentNumber.$lastName.$suffix;
+            $mailNick = $lastName.'.'.$studentNumber.$suffix;
             $schoolEmail = $mailNick.'@amis.edu.ph';
             $suffix++;
         }

@@ -21,7 +21,7 @@
         default => 'Waiting for Verification (Sir Cabel)',
     };
     $approvalReadinessLabel = match (true) {
-        $applicant->status === 'approved' && $allDocsOk && $paymentOk => 'Enrollment Approved ✅',
+        $applicant->status === 'approved' && $paymentOk => 'Enrollment Approved ✅',
         $payment?->status === 'rejected' => 'Enrollment On Hold / Payment Rejected',
         $canApprove => 'Ready for Approval / Under Review',
         default => 'Not Ready for Enrollment / Pending',
@@ -79,7 +79,128 @@
 @endphp
 
 <x-admin-layout title="Applicant Detail" :breadcrumbs="[['label' => 'Applications', 'href' => route('admin.applications.enrollment')], ['label' => 'Enrollment', 'href' => route('admin.applications.enrollment')], ['label' => $breadcrumbName, 'href' => null]]">
-    <div x-data="{ preview: false, src: '', label: '', pdf: false, zoom: 1, panning: false, panEl: null, panX: 0, panY: 0, panLeft: 0, panTop: 0, statusOpen: false, statusValue: @js($currentStatus), statusLabel: @js($currentStatusLabel), statusDescriptions: { draft: 'Application is still being drafted.', ready_for_submission: 'Application is complete and ready for submission.', submitted: 'Student successfully submitted application.', under_review: 'Admin is already reviewing the enrollment application.', pending: 'Waiting for additional requirements, payment, or clarification.', approved: 'Enrollment application approved.', rejected: 'Enrollment application declined.' }, openPreview(url, title, isPdf) { this.preview = true; this.src = url; this.label = title; this.pdf = isPdf; this.zoom = 1; }, closePreview() { this.preview = false; this.zoom = 1; this.stopPan(); }, zoomIn() { this.zoom = Math.min(3, Number((this.zoom + 0.25).toFixed(2))); }, zoomOut() { this.zoom = Math.max(0.5, Number((this.zoom - 0.25).toFixed(2))); }, resetZoom() { this.zoom = 1; }, startPan(event) { if (this.pdf) return; const point = event.touches ? event.touches[0] : event; this.panning = true; this.panEl = event.currentTarget; this.panX = point.pageX; this.panY = point.pageY; this.panLeft = this.panEl.scrollLeft; this.panTop = this.panEl.scrollTop; this.panEl.classList.add('cursor-grabbing'); }, movePan(event) { if (!this.panning || !this.panEl) return; event.preventDefault(); const point = event.touches ? event.touches[0] : event; this.panEl.scrollLeft = this.panLeft - (point.pageX - this.panX); this.panEl.scrollTop = this.panTop - (point.pageY - this.panY); }, stopPan() { if (this.panEl) this.panEl.classList.remove('cursor-grabbing'); this.panning = false; this.panEl = null; }, chooseStatus(value, label) { this.statusValue = value; this.statusLabel = label; this.statusOpen = false; } }"
+    <div x-data="{
+             preview: false,
+             src: '',
+             label: '',
+             pdf: false,
+             zoom: 1,
+             panning: false,
+             panEl: null,
+             panX: 0,
+             panY: 0,
+             panLeft: 0,
+             panTop: 0,
+             statusOpen: false,
+             statusValue: @js($currentStatus),
+             statusLabel: @js($currentStatusLabel),
+             statusDescriptions: {
+                 draft: 'Application is still being drafted.',
+                 ready_for_submission: 'Application is complete and ready for submission.',
+                 submitted: 'Student successfully submitted application.',
+                 under_review: 'Admin is already reviewing the enrollment application.',
+                 pending: 'Waiting for additional requirements, payment, or clarification.',
+                 approved: 'Enrollment application approved.',
+                 rejected: 'Enrollment application declined.'
+             },
+             openPreview(url, title, isPdf) {
+                 this.preview = true;
+                 this.src = url;
+                 this.label = title;
+                 this.pdf = isPdf;
+                 this.zoom = 1;
+             },
+             closePreview() {
+                 this.preview = false;
+                 this.zoom = 1;
+                 this.stopPan();
+             },
+             zoomIn() {
+                 this.zoom = Math.min(3, Number((this.zoom + 0.1).toFixed(2)));
+             },
+             zoomOut() {
+                 this.zoom = Math.max(0.1, Number((this.zoom - 0.1).toFixed(2)));
+             },
+             resetZoom() {
+                 this.zoom = 1;
+             },
+             startPan(event) {
+                 if (this.pdf) return;
+                 const point = event.touches ? event.touches[0] : event;
+                 this.panning = true;
+                 this.panEl = event.currentTarget;
+                 this.panX = point.pageX;
+                 this.panY = point.pageY;
+                 this.panLeft = this.panEl.scrollLeft;
+                 this.panTop = this.panEl.scrollTop;
+                 this.panEl.classList.add('cursor-grabbing');
+             },
+             movePan(event) {
+                 if (!this.panning || !this.panEl) return;
+                 event.preventDefault();
+                 const point = event.touches ? event.touches[0] : event;
+                 this.panEl.scrollLeft = this.panLeft - (point.pageX - this.panX);
+                 this.panEl.scrollTop = this.panTop - (point.pageY - this.panY);
+             },
+             stopPan() {
+                 if (this.panEl) this.panEl.classList.remove('cursor-grabbing');
+                 this.panning = false;
+                 this.panEl = null;
+             },
+             chooseStatus(value, label) {
+                 this.statusValue = value;
+                 this.statusLabel = label;
+                 this.statusOpen = false;
+             },
+             async downloadPdf() {
+                 if (!this.src) return;
+                 const url = this.src;
+                 const filename = (this.label || 'document').replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
+                 if (this.pdf) {
+                     const link = document.createElement('a');
+                     link.href = url;
+                     link.download = filename;
+                     document.body.appendChild(link);
+                     link.click();
+                     document.body.removeChild(link);
+                     return;
+                 }
+                 try {
+                     const btn = document.getElementById('download-pdf-btn');
+                     const originalText = btn.innerHTML;
+                     btn.innerHTML = '<i data-lucide=\'loader-2\' class=\'h-3.5 w-3.5 animate-spin\'></i> Converting...';
+                     if (window.lucide) window.lucide.createIcons();
+                     const { jsPDF } = window.jspdf;
+                     const img = new Image();
+                     img.crossOrigin = 'Anonymous';
+                     img.src = url;
+                     img.onload = () => {
+                         const pdf = new jsPDF({
+                             orientation: img.width > img.height ? 'landscape' : 'portrait',
+                             unit: 'px',
+                             format: [img.width, img.height]
+                         });
+                         pdf.addImage(img, 'JPEG', 0, 0, img.width, img.height);
+                         pdf.save(filename);
+                         btn.innerHTML = originalText;
+                         if (window.lucide) window.lucide.createIcons();
+                     };
+                     img.onerror = () => {
+                         const link = document.createElement('a');
+                         link.href = url;
+                         link.download = this.label || 'image';
+                         document.body.appendChild(link);
+                         link.click();
+                         document.body.removeChild(link);
+                         btn.innerHTML = originalText;
+                         if (window.lucide) window.lucide.createIcons();
+                     };
+                 } catch (e) {
+                     console.error(e);
+                     window.open(url, '_blank');
+                 }
+             }
+         }"
          x-effect="document.body.classList.toggle('overflow-hidden', preview)"
          @keydown.escape.window="closePreview(); statusOpen = false"
          @mouseup.window="stopPan()"
@@ -240,30 +361,33 @@
                 </x-card>
 
                 <x-card title="Payment Proof" subtitle="Enrollment fee verification">
-                    <x-slot:actions>
-                        @if ($payment?->receipt_url && $canReviewPayments)
-                            <form method="POST" action="{{ route('admin.payments.verify', $payment) }}">
-                                @csrf
-                                @method('PATCH')
-                                <button class="doc-action doc-action-approve">APPROVE</button>
-                            </form>
-                            <form method="POST" action="{{ route('admin.payments.reject', $payment) }}">
-                                @csrf
-                                @method('PATCH')
-                                <input type="hidden" name="remarks" value="Payment proof rejected during admin review.">
-                                <button class="doc-action doc-action-reject">REJECT</button>
-                            </form>
-                        @endif
-                    </x-slot:actions>
                     @if ($paymentUrl)
+                        <!-- Animated Info Banner guiding to Finance Module -->
+                        <div class="mb-6 flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 text-emerald-950 dark:border-emerald-900/30 dark:bg-emerald-950/20 transition hover:bg-emerald-100/50 duration-300">
+                            <div class="flex items-center gap-3">
+                                <div class="rounded-xl bg-emerald-600 p-2.5 text-white shadow-md shadow-emerald-600/20 animate-bounce">
+                                    <i data-lucide="landmark" class="h-5 w-5"></i>
+                                </div>
+                                <div class="text-xs">
+                                    <h4 class="font-extrabold uppercase tracking-wider text-emerald-800">Finance Verification Required</h4>
+                                    <p class="mt-0.5 font-medium text-emerald-700">To maintain accounting integrity, approvals and OR assignments must be processed in the unified Finance Workspace.</p>
+                                </div>
+                            </div>
+                            <div class="sm:ml-auto">
+                                <a href="{{ route('admin.payments.show', $payment) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-[0.98]">
+                                    Open in Finance <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                                </a>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-3 gap-4">
-                            <button type="button" class="upload-preview rounded-xl border border-slate-200" @click="openPreview('{{ $paymentUrl }}', 'Payment Proof', {{ $paymentIsPdf ? 'true' : 'false' }})">
+                            <a href="{{ route('admin.payments.show', $payment) }}" class="upload-preview rounded-xl border border-slate-200 block overflow-hidden transition-all hover:ring-4 hover:ring-emerald-100" title="Click to open inside Finance Payment Review workspace">
                                 @if ($paymentIsPdf)
                                     <span class="upload-pdf"><i data-lucide="file-text" class="h-9 w-9"></i>PDF Receipt</span>
                                 @else
-                                    <img src="{{ $paymentUrl }}" alt="Payment Proof">
+                                    <img src="{{ $paymentUrl }}" alt="Payment Proof" class="w-full h-full object-cover">
                                 @endif
-                            </button>
+                            </a>
                             <dl class="detail-grid col-span-2">
                                 <x-applicant.field label="Status" :value="$pmLabels[$payment->status] ?? $payment->status" />
                                 <x-applicant.field label="Method" :value="$payment->method_label ?? $payment->method" />
@@ -340,22 +464,22 @@
 
                 <x-card title="Readiness">
                     <div class="space-y-3 text-sm">
-                        <div class="flex justify-between gap-3"><span>Documents</span><span class="readiness-pill {{ $allDocsOk ? 'readiness-emerald' : 'readiness-amber' }}">{{ $allDocsOk ? 'Approved' : 'Pending' }}</span></div>
+                        <div class="flex justify-between gap-3"><span>Documents</span><span class="readiness-pill {{ $allDocsOk ? 'readiness-emerald' : 'readiness-amber' }}">{{ $allDocsOk ? 'Approved' : 'Pending / Not Prior' }}</span></div>
                         <div class="flex justify-between gap-3"><span>Payment</span><span class="readiness-pill {{ $paymentOk ? 'readiness-emerald' : ($payment?->status === 'rejected' ? 'readiness-rose' : 'readiness-orange') }}">{{ $paymentReadinessLabel }}</span></div>
                         <div class="flex justify-between gap-3"><span>Approval</span><span class="readiness-pill {{ $applicant->status === 'approved' ? 'readiness-emerald' : ($payment?->status === 'rejected' ? 'readiness-rose' : ($canApprove ? 'readiness-emerald' : 'readiness-amber')) }}">{{ $approvalReadinessLabel }}</span></div>
-                        @unless ($canApprove)
+                        @if (!$paymentOk)
                             <div class="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold leading-5 text-rose-700">
-                                @if (!$allDocsOk && !$paymentOk)
-                                    Pending / Not Complete: documents and verified payment are required.
-                                @elseif (!$allDocsOk)
-                                    If no documents + may payment = not allow.
-                                @elseif ($payment?->status === 'rejected')
+                                @if ($payment?->status === 'rejected')
                                     Payment rejected by Sir Cabel. Enrollment is on hold.
                                 @else
-                                    Documents approved, but no verified payment yet.
+                                    Enrollment fee is PRIOR. Do not approve until payment is uploaded and verified.
                                 @endif
                             </div>
-                        @endunless
+                        @elseif (!$allDocsOk)
+                            <div class="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-700">
+                                Documents are not prior. You may approve because enrollment fee is verified; missing document remarks will be kept for follow-up while AMIS ID, SOA, and Microsoft account generation continue.
+                            </div>
+                        @endif
                     </div>
                 </x-card>
             </aside>
@@ -367,13 +491,18 @@
                 <div class="preview-panel">
                     <div class="preview-head gap-3">
                         <strong x-text="label"></strong>
-                        <div class="ml-auto flex items-center gap-2" x-show="!pdf">
-                            <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100" @click="zoomOut()">-</button>
-                            <span class="min-w-14 rounded-full bg-slate-100 px-3 py-1 text-center text-xs font-black text-slate-700" x-text="Math.round(zoom * 100) + '%'"></span>
-                            <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100" @click="zoomIn()">+</button>
-                            <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500 shadow-sm transition hover:bg-slate-100" @click="resetZoom()">Reset</button>
+                        <div class="ml-auto flex items-center gap-2">
+                            <div class="flex items-center gap-2" x-show="!pdf">
+                                <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100" @click="zoomOut()">-</button>
+                                <span class="min-w-14 rounded-full bg-slate-100 px-3 py-1 text-center text-xs font-black text-slate-700" x-text="Math.round(zoom * 100) + '%'"></span>
+                                <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-100" @click="zoomIn()">+</button>
+                                <button type="button" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500 shadow-sm transition hover:bg-slate-100" @click="resetZoom()">Reset</button>
+                            </div>
+                            <button id="download-pdf-btn" type="button" class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-emerald-700 shadow-sm transition hover:bg-emerald-100 flex items-center gap-1 cursor-pointer" @click="downloadPdf()">
+                                <i data-lucide="download" class="h-3.5 w-3.5"></i> Download PDF
+                            </button>
+                            <button type="button" class="text-2xl leading-none text-slate-500" @click="closePreview()">&times;</button>
                         </div>
-                        <button type="button" class="text-2xl leading-none text-slate-500" @click="closePreview()">&times;</button>
                     </div>
                     <div class="preview-body cursor-grab select-none overflow-auto"
                          @mousedown="startPan($event)"
@@ -390,4 +519,5 @@
             </div>
         </template>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </x-admin-layout>
