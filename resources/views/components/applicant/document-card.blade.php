@@ -14,7 +14,7 @@
             @if ($assetUrl) @click="openPreview('{{ $assetUrl }}', '{{ $label }}', {{ $isPdf ? 'true' : 'false' }})" @endif
             @disabled(!$assetUrl)>
         @if ($assetUrl && !$isPdf)
-            <img src="{{ $assetUrl }}" alt="{{ $label }}">
+            <x-smart-preview-image :src="$assetUrl" :alt="$label" />
         @elseif ($assetUrl && $isPdf)
             <span class="upload-pdf">
                 <i data-lucide="file-text" class="h-9 w-9"></i>

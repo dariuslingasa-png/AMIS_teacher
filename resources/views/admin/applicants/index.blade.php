@@ -197,11 +197,15 @@
                                     </td>
                                     <td class="px-5 py-4">
                                         <div class="flex items-center gap-3">
-                                            @if ($photoUrl)
-                                                <img src="{{ $photoUrl }}" alt="{{ $childName }}" loading="lazy" class="h-10 w-10 rounded-md border border-slate-200 object-cover">
-                                            @else
-                                                <span class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-xs font-extrabold text-slate-600 ring-1 ring-slate-200">{{ $childInitials ?: 'ST' }}</span>
-                                            @endif
+                                            <x-smart-image
+                                                :src="$photoUrl"
+                                                :alt="$childName"
+                                                :fallback-initials="$childInitials ?: 'ST'"
+                                                width="w-10"
+                                                height="h-10"
+                                                rounded="rounded-md"
+                                                :eager="true"
+                                            />
                                             <div>
                                                 <div class="font-extrabold text-slate-950">{{ $childName }}</div>
                                                 <div class="mt-0.5 text-xs font-medium text-slate-500">Applicant #{{ str_pad($child->id, 4, '0', STR_PAD_LEFT) }}</div>

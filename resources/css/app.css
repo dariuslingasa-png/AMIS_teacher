@@ -13,6 +13,7 @@
 @import "./detail-sections.css";
 @import "./form-controls.css";
 @import "./review-panel.css";
+@import "./smart-image.css";
 
 @theme {
     --color-primary-50: #ecfdf5;

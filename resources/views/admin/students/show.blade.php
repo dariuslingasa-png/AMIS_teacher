@@ -195,7 +195,11 @@
                 <span class="application-number-pill">Student ID #{{ $student->student_number ?? 'Pending' }}</span>
                 <button type="button" class="applicant-photo" @if ($photoUrl) @click="openPreview('{{ $photoUrl }}', '2x2 Photo', false)" @endif>
                     @if ($photoUrl)
-                        <img src="{{ $photoUrl }}" alt="2x2 Photo">
+                        <div class="smart-preview-wrap">
+                            <div class="smart-preview-skeleton"></div>
+                            <img src="{{ $photoUrl }}" alt="2x2 Photo" loading="eager" decoding="async" class="smart-preview-img" onload="this.classList.add('smart-image-loaded');this.previousElementSibling.style.display='none'" onerror="this.style.display='none';this.previousElementSibling.style.display='none';this.nextElementSibling.style.display='flex'">
+                            <span class="smart-preview-fallback" style="display:none">NO PHOTO</span>
+                        </div>
                     @else
                         NO PHOTO
                     @endif
@@ -456,7 +460,7 @@
                         <article class="upload-card {{ $doc['url'] ? '' : 'upload-card-missing' }}">
                             <button type="button" class="upload-preview" @if ($assetUrl) @click="openPreview('{{ $assetUrl }}', '{{ $doc['label'] }}', {{ $isPdf ? 'true' : 'false' }})" @endif @disabled(!$assetUrl)>
                                 @if ($assetUrl && !$isPdf)
-                                    <img src="{{ $assetUrl }}" alt="{{ $doc['label'] }}">
+                                    <x-smart-preview-image :src="$assetUrl" :alt="$doc['label']" />
                                 @elseif ($assetUrl && $isPdf)
                                     <span class="upload-pdf"><i data-lucide="file-text" class="h-9 w-9"></i>PDF Receipt</span>
                                 @else

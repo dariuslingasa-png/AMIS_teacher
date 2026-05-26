@@ -277,7 +277,7 @@
                                                 @if ($childPaymentIsPdf)
                                                     <span class="upload-pdf"><i data-lucide="file-text" class="h-9 w-9"></i>PDF Receipt</span>
                                                 @else
-                                                    <img src="{{ $childPaymentUrl }}" alt="Payment Proof">
+                                                    <x-smart-preview-image :src="$childPaymentUrl" alt="Payment Proof" />
                                                 @endif
                                             </button>
                                         @else

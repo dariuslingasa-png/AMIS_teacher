@@ -219,7 +219,11 @@
                     <span class="application-number-pill">Application #{{ str_pad($applicant->id, 4, '0', STR_PAD_LEFT) }}</span>
                     <button type="button" class="applicant-photo" @if ($photoUrl) @click="openPreview('{{ $photoUrl }}', '2x2 Photo', false)" @endif>
                         @if ($photoUrl)
-                            <img src="{{ $photoUrl }}" alt="2x2 Photo">
+                            <div class="smart-preview-wrap">
+                                <div class="smart-preview-skeleton"></div>
+                                <img src="{{ $photoUrl }}" alt="2x2 Photo" loading="eager" decoding="async" class="smart-preview-img" onload="this.classList.add('smart-image-loaded');this.previousElementSibling.style.display='none'" onerror="this.style.display='none';this.previousElementSibling.style.display='none';this.nextElementSibling.style.display='flex'">
+                                <span class="smart-preview-fallback" style="display:none">NO PHOTO</span>
+                            </div>
                         @else
                             NO PHOTO
                         @endif
@@ -385,7 +389,7 @@
                                 @if ($paymentIsPdf)
                                     <span class="upload-pdf"><i data-lucide="file-text" class="h-9 w-9"></i>PDF Receipt</span>
                                 @else
-                                    <img src="{{ $paymentUrl }}" alt="Payment Proof" class="w-full h-full object-cover">
+                                    <x-smart-preview-image :src="$paymentUrl" alt="Payment Proof" />
                                 @endif
                             </a>
                             <dl class="detail-grid col-span-2">
