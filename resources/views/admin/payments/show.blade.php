@@ -54,6 +54,31 @@
              resetZoom() {
                  this.zoom = 1;
              },
+             downloadBlob(blob, filename) {
+                 const objectUrl = URL.createObjectURL(blob);
+                 const link = document.createElement('a');
+                 link.href = objectUrl;
+                 link.download = filename;
+                 document.body.appendChild(link);
+                 link.click();
+                 link.remove();
+                 setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+             },
+             async downloadFile(url, filename) {
+                 const response = await fetch(url, { credentials: 'same-origin' });
+                 if (!response.ok) throw new Error('Download request failed.');
+                 const blob = await response.blob();
+                 this.downloadBlob(blob, filename);
+             },
+             loadImage(url) {
+                 return new Promise((resolve, reject) => {
+                     const img = new Image();
+                     img.crossOrigin = 'Anonymous';
+                     img.onload = () => resolve(img);
+                     img.onerror = reject;
+                     img.src = url;
+                 });
+             },
              startPan(event) {
                  if (this.pdf) return;
                  const point = event.touches ? event.touches[0] : event;
@@ -81,48 +106,55 @@
                  if (!this.src) return;
                  const url = this.src;
                  const filename = (this.label || 'document').replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
+                 const btn = document.getElementById('download-pdf-btn');
+                 const originalText = btn ? btn.innerHTML : '';
+
+                 if (btn) {
+                     btn.disabled = true;
+                     btn.innerHTML = '<i data-lucide=\'loader-2\' class=\'h-3.5 w-3.5 animate-spin\'></i> Downloading...';
+                     if (window.lucide) window.lucide.createIcons();
+                 }
+
                  if (this.pdf) {
-                     const link = document.createElement('a');
-                     link.href = url;
-                     link.download = filename;
-                     document.body.appendChild(link);
-                     link.click();
-                     document.body.removeChild(link);
+                     try {
+                         await this.downloadFile(url, filename);
+                     } catch (e) {
+                         console.error(e);
+                         const link = document.createElement('a');
+                         link.href = url;
+                         link.download = filename;
+                         link.rel = 'noopener noreferrer';
+                         document.body.appendChild(link);
+                         link.click();
+                         link.remove();
+                     } finally {
+                         if (btn) {
+                             btn.disabled = false;
+                             btn.innerHTML = originalText;
+                             if (window.lucide) window.lucide.createIcons();
+                         }
+                     }
                      return;
                  }
                  try {
-                     const btn = document.getElementById('download-pdf-btn');
-                     const originalText = btn.innerHTML;
-                     btn.innerHTML = '<i data-lucide=\'loader-2\' class=\'h-3.5 w-3.5 animate-spin\'></i> Converting...';
-                     if (window.lucide) window.lucide.createIcons();
                      const { jsPDF } = window.jspdf;
-                     const img = new Image();
-                     img.crossOrigin = 'Anonymous';
-                     img.src = url;
-                     img.onload = () => {
-                         const pdf = new jsPDF({
-                             orientation: img.width > img.height ? 'landscape' : 'portrait',
-                             unit: 'px',
-                             format: [img.width, img.height]
-                         });
-                         pdf.addImage(img, 'JPEG', 0, 0, img.width, img.height);
-                         pdf.save(filename);
-                         btn.innerHTML = originalText;
-                         if (window.lucide) window.lucide.createIcons();
-                     };
-                     img.onerror = () => {
-                         const link = document.createElement('a');
-                         link.href = url;
-                         link.download = this.label || 'image';
-                         document.body.appendChild(link);
-                         link.click();
-                         document.body.removeChild(link);
-                         btn.innerHTML = originalText;
-                         if (window.lucide) window.lucide.createIcons();
-                     };
+                     const img = await this.loadImage(url);
+                     const pdf = new jsPDF({
+                         orientation: img.width > img.height ? 'landscape' : 'portrait',
+                         unit: 'px',
+                         format: [img.width, img.height]
+                     });
+                     pdf.addImage(img, 'JPEG', 0, 0, img.width, img.height);
+                     pdf.save(filename);
                  } catch (e) {
                      console.error(e);
-                     window.open(url, '_blank');
+                     await this.downloadFile(url, this.label || 'payment-proof');
+                 } finally {
+                     if (btn) {
+                         btn.disabled = false;
+                         btn.innerHTML = originalText;
+                         if (window.lucide) window.lucide.createIcons();
+                     }
                  }
              }
          }"

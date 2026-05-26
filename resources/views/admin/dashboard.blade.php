@@ -70,7 +70,7 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <x-dashboard.module-card :href="route('admin.applications.dashboard')" icon="clipboard-check" name="Applications" owner="Registrar Office" summary="Enrollment, review, requirements, approvals ({{ $totalApplications }} applied)" accent="emerald" shape="soft" />
-            <x-dashboard.module-card :href="route('admin.students.index')" icon="users" name="Students" owner="Records Office" summary="Records, profiles, history, documents" accent="violet" shape="arch" />
+            <x-dashboard.module-card :href="route('admin.students.dashboard')" icon="users" name="Students" owner="Records Office" summary="Dashboard, records, profiles, history, documents" accent="violet" shape="arch" />
             <x-dashboard.module-card :href="route('admin.academic.dashboard')" icon="book-open-check" name="Academic" owner="Academic Office" summary="Subjects, curriculum, sections, schedules" accent="sky" shape="soft" />
             <x-dashboard.module-card icon="calendar-check" name="Attendance" owner="Academic Office" summary="QR, manual attendance, reports" accent="teal" shape="circle" status="Coming Soon" disabled />
             <x-dashboard.module-card icon="graduation-cap" name="Grades" owner="Faculty Office" summary="Encoding, assessment, report cards" accent="blue" shape="arch" status="Coming Soon" disabled />
