@@ -191,11 +191,9 @@
         <x-card title="Invoice" subtitle="Invoice, payment details, proof, and finance review">
             <div class="mx-auto max-w-3xl overflow-hidden rounded-3xl border border-slate-350 bg-white p-6 font-sans text-xs shadow-sm">
                 
-                <!-- 1. School Header (Consistent with Official SOA) -->
-                <div class="flex items-center justify-between border-b-2 border-[#1B365D] pb-3">
-                    <span class="text-sm font-black text-[#1B365D] tracking-wider">AL MUNAWWARA ISLAMIC SCHOOL</span>
-                    <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS Logo" width="55" height="55" class="h-14 w-14 object-contain mx-auto">
-                    <span class="text-base font-extrabold text-[#2E7D32] tracking-wider">المدرسة المنورة الإسلامية</span>
+                <!-- 1. School Header (Vector SVG Asset) -->
+                <div class="border-b border-[#1B365D] pb-2">
+                    <img src="{{ asset('svg/school_billing/header_school_billing.svg') }}" alt="AL MUNAWWARA ISLAMIC SCHOOL" class="w-full h-auto">
                 </div>
 
                 <!-- 2. Invoice Title Bar -->

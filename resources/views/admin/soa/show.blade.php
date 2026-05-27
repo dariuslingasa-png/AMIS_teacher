@@ -131,11 +131,9 @@
             <div class="bg-white p-8 border border-slate-300 shadow-md rounded-2xl print:border-0 print:shadow-none print:p-0 print-container">
                 <div class="mx-auto max-w-[800px] border border-slate-400 p-6 bg-white font-sans text-xs text-slate-800 leading-normal">
                     
-                    <!-- 1. School Header -->
-                    <div class="flex items-center justify-between border-b-2 border-slate-400 pb-3">
-                        <span class="text-sm font-black text-slate-950 tracking-wider">AL MUNAWWARA ISLAMIC SCHOOL</span>
-                        <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS Logo" width="55" height="55" class="h-14 w-14 object-contain mx-auto">
-                        <span class="text-base font-extrabold text-[#2E7D32] tracking-wider">المدرسة المنورة الإسلامية</span>
+                    <!-- 1. School Header (Vector SVG Asset) -->
+                    <div class="border-b border-black pb-2">
+                        <img src="{{ asset('svg/school_billing/header_school_billing.svg') }}" alt="AL MUNAWWARA ISLAMIC SCHOOL" class="w-full h-auto">
                     </div>
 
                     <!-- 2. Statement Title Bar (Exact recreation with borders and sage color) -->
