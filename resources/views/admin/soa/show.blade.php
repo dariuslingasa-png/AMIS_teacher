@@ -133,123 +133,112 @@
                     
                     <!-- 1. School Header -->
                     <div class="flex items-center justify-between border-b-2 border-slate-400 pb-3">
-                        <span class="text-base font-black text-slate-900 tracking-wider">AL MUNAWWARA ISLAMIC SCHOOL</span>
-                        <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS Logo" width="55" height="55" class="h-14 w-14 rounded-full border border-slate-200 object-contain mx-auto">
-                        <span class="text-lg font-bold text-emerald-700 tracking-wider" style="font-family: 'Courier New', Courier, monospace; font-weight: 900;">المدرسة المنورة الإسلامية</span>
+                        <span class="text-sm font-black text-slate-950 tracking-wider">AL MUNAWWARA ISLAMIC SCHOOL</span>
+                        <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS Logo" width="55" height="55" class="h-14 w-14 object-contain mx-auto">
+                        <span class="text-base font-extrabold text-[#2E7D32] tracking-wider">المدرسة المنورة الإسلامية</span>
                     </div>
 
-                    <!-- 2. Statement Title Bar -->
-                    <div class="bg-slate-100 border-x border-b border-slate-400 py-1.5 text-center font-black uppercase tracking-widest text-slate-950 mt-2 border-t-2 border-slate-400">
+                    <!-- 2. Statement Title Bar (Exact recreation with borders and sage color) -->
+                    <div class="bg-[#DFE7E6] border-y border-black py-1.5 text-center font-bold uppercase tracking-widest text-black mt-2">
                         STATEMENT OF ACCOUNT SY 2026-2027
                     </div>
 
-                    <!-- 3. Secondary Layout (Metadata Left + Gray Divider Bar + Right Student details and Tuition stacked) -->
-                    <div class="grid grid-cols-[220px_12px_1fr] gap-0 mt-3 border-b border-slate-400 pb-4">
+                    <!-- 3. Secondary Layout (Metadata Left + Vertical Divider Bar + Right Student details and Tuition stacked) -->
+                    <div class="grid grid-cols-[210px_50px_1fr] gap-0 mt-4 border-b border-slate-400 pb-4">
                         
                         <!-- Left Block: Address + Quote -->
-                        <div class="space-y-4 pr-3 text-[10px] self-start">
+                        <div class="space-y-4 pr-4 text-[10px] self-start">
                             <div>
                                 <h4 class="font-bold text-slate-500">Address:</h4>
                                 <p class="font-bold text-slate-900 mt-0.5">Bugac Ma-a Road, Davao City</p>
                             </div>
-                            <div>
+                            <div class="mt-3">
                                 <h4 class="font-bold text-slate-500">Email Add:</h4>
-                                <p class="font-bold text-slate-900 mt-0.5">almunawwaraislamicschool@gmail.com</p>
+                                <p class="font-bold text-slate-900 mt-0.5 leading-tight">almunawwaraislamicschool@gmail.com</p>
                             </div>
                             <!-- Sahih Quote -->
-                            <div class="pt-2 border-t border-slate-200">
-                                <span class="text-[9px] font-black uppercase tracking-wider text-blue-600 italic">Sahih International</span>
-                                <p class="italic text-[9.5px] font-semibold text-slate-700 mt-1 leading-relaxed">
+                            <div class="pt-3">
+                                <span class="text-[9.5px] font-black uppercase tracking-wider text-[#2962FF] italic">Sahih International</span>
+                                <p class="italic text-[10px] font-semibold text-slate-800 mt-1 leading-normal">
                                     "Whoever does righteousness, whether male or female, while he is a believer - We will surely cause him to live a good life, and We will surely give them their reward [in the Hereafter] according to the best of what they do."
                                 </p>
-                                <p class="text-[9.5px] font-black text-blue-600 mt-1 uppercase">Qur'an 16:97</p>
+                                <p class="text-[9.5px] font-black text-[#2962FF] mt-1 text-right">Qur'an 16:97</p>
                             </div>
                         </div>
 
-                        <!-- Middle Block: Gray-Blue Divider Bar (Exact recreation from template image) -->
-                        <div class="bg-[#B4C2C6] w-full h-full min-h-[220px]"></div>
+                        <!-- Middle Block: Sage Green Divider Bar (Exact color matching banner) -->
+                        <div class="bg-[#DFE7E6] w-full h-full min-h-[220px]"></div>
 
                         <!-- Right Block: Student Details & Tuition tables stacked vertically -->
-                        <div class="pl-4 space-y-4">
-                            <!-- Student details table -->
-                            <div class="border border-slate-400 rounded overflow-hidden">
-                                <table class="w-full text-left border-collapse text-[10px]">
-                                    <tbody class="divide-y divide-slate-350">
-                                        <tr>
-                                            <td class="bg-slate-50 px-2.5 py-1.5 font-bold text-slate-500 w-32 border-r border-slate-350">Name of Student</td>
-                                            <td class="px-2.5 py-1.5 font-black text-slate-950 uppercase">{{ $studentName }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="bg-slate-50 px-2.5 py-1.5 font-bold text-slate-500 border-r border-slate-350">Address</td>
-                                            <td class="px-2.5 py-1.5 font-semibold text-slate-800">{{ $address }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="bg-slate-50 px-2.5 py-1.5 font-bold text-slate-500 border-r border-slate-350">Email</td>
-                                            <td class="px-2.5 py-1.5 font-semibold text-slate-850">{{ $email }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="bg-slate-50 px-2.5 py-1.5 font-bold text-slate-500 border-r border-slate-350">LRN</td>
-                                            <td class="px-2.5 py-1.5 font-black text-slate-950">{{ $lrn }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="bg-slate-50 px-2.5 py-1.5 font-bold text-slate-500 border-r border-slate-350">Category</td>
-                                            <td class="px-2.5 py-1.5 font-semibold text-slate-800">{{ $category }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="bg-slate-50 px-2.5 py-1.5 font-bold text-slate-500 border-r border-slate-350">Grade Level</td>
-                                            <td class="px-2.5 py-1.5 font-semibold text-slate-800">{{ $grade }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="bg-slate-50 px-2.5 py-1.5 font-bold text-slate-500 border-r border-slate-350">Discount Privilege</td>
-                                            <td class="px-2.5 py-1.5 font-black text-emerald-800">{{ $discountPrivilege }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="bg-slate-50 px-2.5 py-1.5 font-bold text-slate-500 border-r border-slate-350">Discount Status</td>
-                                            <td class="px-2.5 py-1.5 font-semibold text-slate-800">{{ $discountStatus }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                        <div class="pl-5 space-y-4">
+                            <!-- Student details plain list (REMOVED borders to match template photo exactly) -->
+                            <div class="grid grid-cols-[115px_1fr] gap-x-2 gap-y-1 text-[10.5px] text-slate-800">
+                                <div class="font-semibold text-slate-500">Name of Student</div>
+                                <div class="font-black text-slate-950 uppercase">{{ $studentName }}</div>
+
+                                <div class="font-semibold text-slate-500">Address</div>
+                                <div class="font-bold text-slate-900">
+                                    <div>{{ $address }}</div>
+                                    <div class="mt-0.5 font-semibold text-slate-700">Email: {{ $email }}</div>
+                                    <div class="mt-0.5 font-black text-slate-950">LRN: {{ $lrn }}</div>
+                                </div>
+
+                                <div class="font-semibold text-slate-500">Category</div>
+                                <div class="font-bold text-slate-900">{{ $category }}</div>
+
+                                <div class="font-semibold text-slate-500">Grade Level</div>
+                                <div class="font-bold text-slate-900">{{ $grade }}</div>
+
+                                <div class="font-semibold text-slate-500">Discount Privilege</div>
+                                <div class="font-bold text-slate-900">{{ $discountPrivilege }}</div>
+
+                                <div class="font-semibold text-slate-500">Discount Status</div>
+                                <div class="font-bold text-slate-900">{{ $discountStatus }}</div>
                             </div>
 
-                            <!-- Tuition Fee summary table -->
-                            <div class="border border-slate-400 rounded overflow-hidden">
-                                <table class="w-full text-left text-[10px] border-collapse">
+                            <!-- Tuition Fee summary table (COLLAPSED thin black borders, white headers) -->
+                            <div class="border border-black">
+                                <table class="w-full text-left text-[10px] border-collapse border border-black">
                                     <thead>
-                                        <tr class="bg-slate-50 border-b border-slate-400 text-slate-600 font-bold uppercase">
-                                            <th class="px-2.5 py-1.5 border-r border-slate-350">DESCRIPTION</th>
-                                            <th class="px-2.5 py-1.5 text-right border-r border-slate-350">AMOUNT</th>
-                                            <th colspan="2" class="px-2.5 py-1.5 text-center border-r border-slate-350">DISCOUNT (% / AMOUNT)</th>
-                                            <th class="px-2.5 py-1.5 text-right">NET</th>
+                                        <tr class="bg-white border-b border-black text-black font-bold uppercase text-center text-[9px] tracking-wider">
+                                            <th rowspan="2" class="px-2.5 py-1.5 border-r border-black text-left">DESCRIPTION</th>
+                                            <th rowspan="2" class="px-2.5 py-1.5 border-r border-black">AMOUNT</th>
+                                            <th colspan="2" class="px-2.5 py-1.5 border-r border-black">DISCOUNT</th>
+                                            <th rowspan="2" class="px-2.5 py-1.5">NET</th>
+                                        </tr>
+                                        <tr class="bg-white border-b border-black text-black font-bold uppercase text-center text-[9px] tracking-wider">
+                                            <th class="px-2.5 py-1 border-r border-black">%</th>
+                                            <th class="px-2.5 py-1 border-r border-black">AMOUNT</th>
                                         </tr>
                                     </thead>
-                                    <tbody class="divide-y divide-slate-350 font-semibold text-slate-800">
+                                    <tbody class="divide-y divide-black font-semibold text-black">
                                         <tr>
-                                            <td class="px-2.5 py-1.5 border-r border-slate-350">Tuition Fees</td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-slate-350">{{ number_format($tuition, 2) }}</td>
-                                            <td class="px-2.5 py-1.5 text-center border-r border-slate-200 text-rose-800">15%</td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-slate-350 text-rose-800">{{ number_format($discountAmount, 2) }}</td>
-                                            <td class="px-2.5 py-1.5 text-right font-black text-slate-950">{{ number_format($tuitionNet, 2) }}</td>
+                                            <td class="px-2.5 py-1.5 border-r border-black font-bold">Tuition Fees</td>
+                                            <td class="px-2.5 py-1.5 text-right border-r border-black">{{ number_format($tuition, 2) }}</td>
+                                            <td class="px-2.5 py-1.5 text-center border-r border-black font-semibold text-black">15%</td>
+                                            <td class="px-2.5 py-1.5 text-right border-r border-black text-black font-semibold">{{ number_format($discountAmount, 2) }}</td>
+                                            <td class="px-2.5 py-1.5 text-right font-bold text-black">{{ number_format($tuitionNet, 2) }}</td>
                                         </tr>
                                         <tr>
-                                            <td class="px-2.5 py-1.5 border-r border-slate-350">Miscellaneous</td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-slate-350">{{ number_format($misc, 2) }}</td>
-                                            <td class="px-2.5 py-1.5 text-center border-r border-slate-200">-</td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-slate-350">-</td>
-                                            <td class="px-2.5 py-1.5 text-right font-black text-slate-950">{{ number_format($misc, 2) }}</td>
+                                            <td class="px-2.5 py-1.5 border-r border-black font-bold">Miscellaneous</td>
+                                            <td class="px-2.5 py-1.5 text-right border-r border-black">{{ number_format($misc, 2) }}</td>
+                                            <td class="px-2.5 py-1.5 text-center border-r border-black"></td>
+                                            <td class="px-2.5 py-1.5 text-right border-r border-black">-</td>
+                                            <td class="px-2.5 py-1.5 text-right font-bold text-black">{{ number_format($misc, 2) }}</td>
                                         </tr>
-                                        <tr class="bg-slate-50 border-t border-slate-400 font-bold text-slate-900">
-                                            <td class="px-2.5 py-1.5 border-r border-slate-350">Total Fees</td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-slate-350">{{ number_format($totalFees, 2) }}</td>
-                                            <td class="px-2.5 py-1.5 text-center border-r border-slate-200"></td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-slate-350">-</td>
-                                            <td class="px-2.5 py-1.5 text-right font-black text-slate-950">{{ number_format($finalFees, 2) }}</td>
+                                        <tr class="bg-white border-t border-black font-bold text-black">
+                                            <td class="px-2.5 py-1.5 border-r border-black font-bold">Total Fees</td>
+                                            <td class="px-2.5 py-1.5 text-right border-r border-black font-bold">{{ number_format($totalFees, 2) }}</td>
+                                            <td class="px-2.5 py-1.5 text-center border-r border-black font-semibold text-black"></td>
+                                            <td class="px-2.5 py-1.5 text-right border-r border-black text-black font-semibold"></td>
+                                            <td class="px-2.5 py-1.5 text-right font-bold">{{ number_format($finalFees, 2) }}</td>
                                         </tr>
-                                        <tr class="bg-slate-100 font-black text-slate-950">
-                                            <td class="px-2.5 py-1.5 border-r border-slate-350">Final Fees</td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-slate-350"></td>
-                                            <td class="px-2.5 py-1.5 text-center border-r border-slate-200"></td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-slate-350">-</td>
-                                            <td class="px-2.5 py-1.5 text-right font-black text-slate-950">{{ number_format($finalFees, 2) }}</td>
+                                        <tr class="bg-white border-t border-black font-bold text-black">
+                                            <td class="px-2.5 py-1.5 border-r border-black font-bold">Final Fees</td>
+                                            <td class="px-2.5 py-1.5 text-right border-r border-black"></td>
+                                            <td class="px-2.5 py-1.5 text-center border-r border-black"></td>
+                                            <td class="px-2.5 py-1.5 text-right border-r border-black">-</td>
+                                            <td class="px-2.5 py-1.5 text-right font-bold">{{ number_format($finalFees, 2) }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -257,111 +246,111 @@
                         </div>
                     </div>
 
-                    <!-- 4. Main Chronological Ledger Table -->
-                    <div class="mt-4 border border-slate-400 rounded overflow-hidden">
-                        <table class="w-full text-left text-[10px] border-collapse">
+                    <!-- 4. Main Chronological Ledger Table (Collapsing black borders, sage gray header) -->
+                    <div class="mt-4 border border-black">
+                        <table class="w-full text-left text-[10px] border-collapse border border-black">
                             <thead>
-                                <tr class="bg-[#CAD4D6] text-slate-900 font-black border-b border-slate-400 uppercase text-[9.5px]">
-                                    <th class="px-3 py-2 border-r border-slate-350">Description</th>
-                                    <th class="px-3 py-2 text-center border-r border-slate-350">Month</th>
-                                    <th class="px-3 py-2 text-right border-r border-slate-350">Amount</th>
-                                    <th class="px-3 py-2 text-center border-r border-slate-350">Date</th>
-                                    <th class="px-3 py-2 text-center border-r border-slate-350">Amount Paid</th>
-                                    <th class="px-3 py-2 text-center border-r border-slate-350">OR</th>
+                                <tr class="bg-[#DFE7E6] text-black font-bold border-b border-black uppercase text-[9.5px]">
+                                    <th class="px-3 py-2 border-r border-black">Description</th>
+                                    <th class="px-3 py-2 text-center border-r border-black">Month</th>
+                                    <th class="px-3 py-2 text-right border-r border-black">Amount</th>
+                                    <th class="px-3 py-2 text-center border-r border-black">Date</th>
+                                    <th class="px-3 py-2 text-center border-r border-black">Amount Paid</th>
+                                    <th class="px-3 py-2 text-center border-r border-black">OR</th>
                                     <th class="px-3 py-2 text-right">Balance</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-300 font-semibold text-slate-800">
+                            <tbody class="divide-y divide-black font-semibold text-slate-800">
                                 <!-- Dynamic Ledger Rows (Matched exactly to photo template) -->
                                 <tr>
-                                    <td class="px-3 py-2 border-r border-slate-350 font-bold text-slate-950">Paid Enrollment Fee</td>
-                                    <td class="px-3 py-2 text-center border-r border-slate-350">-</td>
-                                    <td class="px-3 py-2 text-right border-r border-slate-350">-</td>
-                                    <td class="px-3 py-2 text-center border-r border-slate-350">30-Dec-25</td>
-                                    <td class="px-3 py-2 text-center border-r border-slate-350 font-black bg-[#FFFF00] text-slate-950">3,000.00</td>
-                                    <td class="px-3 py-2 text-center border-r border-slate-350 font-bold text-slate-900">70105712</td>
+                                    <td class="px-3 py-2 border-r border-black font-bold text-slate-950">Paid Enrollment Fee</td>
+                                    <td class="px-3 py-2 text-center border-r border-black">-</td>
+                                    <td class="px-3 py-2 text-right border-r border-black">-</td>
+                                    <td class="px-3 py-2 text-center border-r border-black">30-Dec-25</td>
+                                    <td class="px-3 py-2 text-center border-r border-black font-black bg-[#FFFF00] text-slate-950 text-[10.5px]">3,000.00</td>
+                                    <td class="px-3 py-2 text-center border-r border-black font-bold text-slate-900">70105712</td>
                                     <td class="px-3 py-2 text-right font-bold text-slate-900">31,285.00</td>
                                 </tr>
                                 <tr>
-                                    <td class="px-3 py-2 border-r border-slate-350 font-bold text-slate-950">Books and programs</td>
-                                    <td class="px-3 py-2 text-center border-r border-slate-350">-</td>
-                                    <td class="px-3 py-2 text-right border-r border-slate-350">5,900.00</td>
-                                    <td class="px-3 py-2 text-center border-r border-slate-350">-</td>
-                                    <td class="px-3 py-2 text-center border-r border-slate-350">-</td>
-                                    <td class="px-3 py-2 text-center border-r border-slate-350">-</td>
+                                    <td class="px-3 py-2 border-r border-black font-bold text-slate-950">Books and programs</td>
+                                    <td class="px-3 py-2 text-center border-r border-black">-</td>
+                                    <td class="px-3 py-2 text-right border-r border-black">5,900.00</td>
+                                    <td class="px-3 py-2 text-center border-r border-black">-</td>
+                                    <td class="px-3 py-2 text-center border-r border-black">-</td>
+                                    <td class="px-3 py-2 text-center border-r border-black">-</td>
                                     <td class="px-3 py-2 text-right font-bold text-slate-900">37,185.00</td>
                                 </tr>
                                 <tr>
-                                    <td class="px-3 py-2 border-r border-slate-350 font-bold text-slate-950">Paid Books</td>
-                                    <td class="px-3 py-2 text-center border-r border-slate-350">-</td>
-                                    <td class="px-3 py-2 text-right border-r border-slate-350">-</td>
-                                    <td class="px-3 py-2 text-center border-r border-slate-350">30-Dec-25</td>
-                                    <td class="px-3 py-2 text-center border-r border-slate-350 font-black bg-[#FFFF00] text-slate-950">1,000.00</td>
-                                    <td class="px-3 py-2 text-center border-r border-slate-350 font-bold text-slate-900">70105712</td>
+                                    <td class="px-3 py-2 border-r border-black font-bold text-slate-950">Paid Books</td>
+                                    <td class="px-3 py-2 text-center border-r border-black">-</td>
+                                    <td class="px-3 py-2 text-right border-r border-black">-</td>
+                                    <td class="px-3 py-2 text-center border-r border-black">30-Dec-25</td>
+                                    <td class="px-3 py-2 text-center border-r border-black font-black bg-[#FFFF00] text-slate-950 text-[10.5px]">1,000.00</td>
+                                    <td class="px-3 py-2 text-center border-r border-black font-bold text-slate-900">70105712</td>
                                     <td class="px-3 py-2 text-right font-bold text-slate-900">36,185.00</td>
                                 </tr>
 
                                 <!-- Shaded Required Payment Monthly spacer -->
-                                <tr class="bg-slate-100 font-black text-slate-650 border-t border-slate-400">
-                                    <td class="px-3 py-1.5 border-r border-slate-350">Required Payment Monthly</td>
-                                    <td class="px-3 py-1.5 text-center border-r border-slate-350"></td>
-                                    <td class="px-3 py-1.5 text-right border-r border-slate-350"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-slate-350"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-slate-350"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-slate-350"></td>
+                                <tr class="bg-slate-100 font-black text-slate-650 border-t border-black">
+                                    <td class="px-3 py-1.5 border-r border-black">Required Payment Monthly</td>
+                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
+                                    <td class="px-3 py-1.5 text-right border-r border-black"></td>
+                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
+                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
+                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
                                     <td class="px-3 py-1.5 text-right font-bold text-slate-900">-</td>
                                 </tr>
 
                                 <!-- Year: 2026 -->
                                 <tr>
-                                    <td class="px-3 py-1.5 border-r border-slate-350 font-black text-slate-900">Year: 2026</td>
-                                    <td class="px-3 py-1.5 text-center border-r border-slate-350"></td>
-                                    <td class="px-3 py-1.5 text-right border-r border-slate-350"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-slate-350"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-slate-350"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-slate-350"></td>
+                                    <td class="px-3 py-1.5 border-r border-black font-black text-slate-900">Year: 2026</td>
+                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
+                                    <td class="px-3 py-1.5 text-right border-r border-black"></td>
+                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
+                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
+                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
                                     <td class="px-3 py-1.5 text-right font-bold text-slate-900"></td>
                                 </tr>
                                 <!-- July - December installments -->
                                 @foreach (['July', 'August', 'September', 'October', 'November', 'December'] as $month)
                                     <tr>
-                                        <td class="px-3 py-1.5 border-r border-slate-350"></td>
-                                        <td class="px-3 py-1.5 text-center border-r border-slate-350 font-bold text-slate-700">{{ $month }}</td>
-                                        <td class="px-3 py-1.5 text-right border-r border-slate-350 font-bold">4,020.56</td>
-                                        <td class="px-3 py-1.5 text-center border-r border-slate-350">-</td>
-                                        <td class="px-3 py-1.5 text-center border-r border-slate-350">-</td>
-                                        <td class="px-3 py-1.5 text-center border-r border-slate-350">-</td>
+                                        <td class="px-3 py-1.5 border-r border-black"></td>
+                                        <td class="px-3 py-1.5 text-center border-r border-black font-bold text-slate-700">{{ $month }}</td>
+                                        <td class="px-3 py-1.5 text-right border-r border-black font-bold">4,020.56</td>
+                                        <td class="px-3 py-1.5 text-center border-r border-black">-</td>
+                                        <td class="px-3 py-1.5 text-center border-r border-black">-</td>
+                                        <td class="px-3 py-1.5 text-center border-r border-black">-</td>
                                         <td class="px-3 py-1.5 text-right font-bold text-slate-400"></td>
                                     </tr>
                                 @endforeach
 
                                 <!-- Year: 2027 -->
                                 <tr>
-                                    <td class="px-3 py-1.5 border-r border-slate-350 font-black text-slate-900">Year: 2027</td>
-                                    <td class="px-3 py-1.5 text-center border-r border-slate-350"></td>
-                                    <td class="px-3 py-1.5 text-right border-r border-slate-350"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-slate-350"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-slate-350"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-slate-350"></td>
+                                    <td class="px-3 py-1.5 border-r border-black font-black text-slate-900">Year: 2027</td>
+                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
+                                    <td class="px-3 py-1.5 text-right border-r border-black"></td>
+                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
+                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
+                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
                                     <td class="px-3 py-1.5 text-right font-bold text-slate-900"></td>
                                 </tr>
                                 <!-- January - March installments -->
                                 @foreach (['January', 'February', 'March'] as $month)
                                     <tr>
-                                        <td class="px-3 py-1.5 border-r border-slate-350"></td>
-                                        <td class="px-3 py-1.5 text-center border-r border-slate-350 font-bold text-slate-700">{{ $month }}</td>
-                                        <td class="px-3 py-1.5 text-right border-r border-slate-350 font-bold">4,020.56</td>
-                                        <td class="px-3 py-1.5 text-center border-r border-slate-350">-</td>
-                                        <td class="px-3 py-1.5 text-center border-r border-slate-350">-</td>
-                                        <td class="px-3 py-1.5 text-center border-r border-slate-350">-</td>
+                                        <td class="px-3 py-1.5 border-r border-black"></td>
+                                        <td class="px-3 py-1.5 text-center border-r border-black font-bold text-slate-700">{{ $month }}</td>
+                                        <td class="px-3 py-1.5 text-right border-r border-black font-bold">4,020.56</td>
+                                        <td class="px-3 py-1.5 text-center border-r border-black">-</td>
+                                        <td class="px-3 py-1.5 text-center border-r border-black">-</td>
+                                        <td class="px-3 py-1.5 text-center border-r border-black">-</td>
                                         <td class="px-3 py-1.5 text-right font-bold text-slate-400"></td>
                                     </tr>
                                 @endforeach
 
                                 <!-- Shaded Footer Row with TO BE PAID and yellow highlighted PAID -->
-                                <tr class="bg-slate-100 font-black border-t border-slate-400 uppercase text-[10px]">
-                                    <td colspan="4" class="px-3 py-2 text-right border-r border-slate-350 text-slate-950 font-black">TO BE PAID</td>
-                                    <td colspan="2" class="px-3 py-2 text-center border-r border-slate-350 bg-[#FFFF00] text-slate-950 font-black">PAID</td>
+                                <tr class="bg-slate-100 font-black border-t border-black uppercase text-[10px]">
+                                    <td colspan="4" class="px-3 py-2 text-right border-r border-black text-slate-950 font-black">TO BE PAID</td>
+                                    <td colspan="2" class="px-3 py-2 text-center border-r border-black bg-[#FFFF00] text-slate-950 font-black text-[10.5px]">PAID</td>
                                     <td class="px-3 py-2 text-right bg-sky-200 text-slate-950 font-black">{{ number_format($remainingBalance, 2) }}</td>
                                 </tr>
                             </tbody>
@@ -374,11 +363,11 @@
                         <div class="space-y-1.5">
                             <div class="flex items-center justify-between text-[10px] font-bold text-slate-800">
                                 <span>Total Amount to pay</span>
-                                <div class="bg-sky-200 border border-slate-400 text-slate-950 w-36 px-2.5 py-1 text-right font-black rounded-sm">{{ number_format($remainingBalance, 2) }}</div>
+                                <div class="bg-sky-200 border border-black text-slate-950 w-36 px-2.5 py-1 text-right font-black rounded-sm">{{ number_format($remainingBalance, 2) }}</div>
                             </div>
                             <div class="flex items-center justify-between text-[10px] font-bold text-slate-800">
                                 <span>Due Monthly Payment (9 Months)</span>
-                                <div class="bg-[#FFFF00] border border-slate-400 text-slate-950 w-36 px-2.5 py-1 text-right font-black rounded-sm">4,020.56</div>
+                                <div class="bg-[#FFFF00] border border-black text-slate-950 w-36 px-2.5 py-1 text-right font-black rounded-sm">4,020.56</div>
                             </div>
                         </div>
 
@@ -390,9 +379,9 @@
                     </div>
 
                     <!-- 6. Thick Yellow Separator and Shukran footer -->
-                    <div class="mt-6 border-t-2 border-slate-400 pt-4 text-center">
+                    <div class="mt-6 border-t border-slate-400 pt-4 text-center">
                         <div class="w-11/12 mx-auto h-4 bg-[#FFFF00] mb-4"></div>
-                        <p class="text-xs font-black tracking-wider text-slate-950 uppercase" style="font-family: 'Courier New', Courier, monospace; font-weight:900;">Shukran. JazakAllahu khayran</p>
+                        <p class="text-xs font-bold tracking-wider text-black uppercase">Shukran. JazakAllahu khayran</p>
                     </div>
 
                 </div>

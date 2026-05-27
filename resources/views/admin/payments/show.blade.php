@@ -193,13 +193,13 @@
                 
                 <!-- 1. School Header (Consistent with Official SOA) -->
                 <div class="flex items-center justify-between border-b-2 border-slate-400 pb-3">
-                    <span class="text-sm font-black text-slate-900 tracking-wider">AL MUNAWWARA ISLAMIC SCHOOL</span>
-                    <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS Logo" width="50" height="50" class="h-12 w-12 rounded-full border border-slate-200 object-contain mx-auto">
-                    <span class="text-base font-bold text-emerald-700 tracking-wider" style="font-family: 'Courier New', Courier, monospace; font-weight: 900;">المدرسة المنورة الإسلامية</span>
+                    <span class="text-sm font-black text-slate-950 tracking-wider">AL MUNAWWARA ISLAMIC SCHOOL</span>
+                    <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS Logo" width="55" height="55" class="h-14 w-14 object-contain mx-auto">
+                    <span class="text-base font-extrabold text-[#2E7D32] tracking-wider">المدرسة المنورة الإسلامية</span>
                 </div>
 
                 <!-- 2. Invoice Title Bar -->
-                <div class="bg-slate-100 border-x border-b border-slate-400 py-1.5 text-center font-black uppercase tracking-widest text-slate-950 mt-2 border-t-2 border-slate-400">
+                <div class="bg-[#DFE7E6] border-y border-black py-1.5 text-center font-bold uppercase tracking-widest text-black mt-2">
                     INVOICE FOR ENROLLMENT SY 2026-2027
                 </div>
 
@@ -220,26 +220,26 @@
                 </div>
 
                 <!-- 4. Items Table -->
-                <div class="mt-4 border border-slate-350 rounded overflow-hidden">
-                    <table class="w-full text-left text-[10px] border-collapse">
+                <div class="mt-4 border border-black">
+                    <table class="w-full text-left text-[10px] border-collapse border border-black">
                         <thead>
-                            <tr class="bg-[#CAD4D6] text-slate-900 font-black border-b border-slate-350 uppercase">
-                                <th class="px-4 py-2 border-r border-slate-350">Child</th>
-                                <th class="px-4 py-2 border-r border-slate-350">Grade</th>
-                                <th class="px-4 py-2 border-r border-slate-350">Learning Mode</th>
+                            <tr class="bg-[#DFE7E6] text-black font-bold border-b border-black uppercase">
+                                <th class="px-4 py-2 border-r border-black">Child</th>
+                                <th class="px-4 py-2 border-r border-black">Grade</th>
+                                <th class="px-4 py-2 border-r border-black">Learning Mode</th>
                                 <th class="px-4 py-2 text-right">Amount</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-300 font-bold text-slate-800">
+                        <tbody class="divide-y divide-black font-semibold text-black">
                             @forelse ($invoiceChildren as $index => $child)
                                 <tr>
-                                    <td class="px-4 py-3 border-r border-slate-350">
-                                        <div class="font-black text-slate-950 uppercase">{{ $index + 1 }}. {{ $child->full_name ?: 'Applicant' }}</div>
-                                        <div class="text-[9px] font-semibold text-slate-400 mt-0.5 tracking-wider">APPLICANT #{{ str_pad((string) $child->id, 4, '0', STR_PAD_LEFT) }}</div>
+                                    <td class="px-4 py-3 border-r border-black">
+                                        <div class="font-bold text-black uppercase">{{ $index + 1 }}. {{ $child->full_name ?: 'Applicant' }}</div>
+                                        <div class="text-[9px] font-semibold text-slate-500 mt-0.5 tracking-wider">APPLICANT #{{ str_pad((string) $child->id, 4, '0', STR_PAD_LEFT) }}</div>
                                     </td>
-                                    <td class="px-4 py-3 border-r border-slate-350 uppercase">{{ $child->grade_level ?? 'GRADE PENDING' }}</td>
-                                    <td class="px-4 py-3 border-r border-slate-350 uppercase">{{ $learningModeLabel($child->learning_mode ?? null) }}</td>
-                                    <td class="px-4 py-3 text-right font-black text-slate-950">PHP {{ number_format($invoiceChildAmount, 2) }}</td>
+                                    <td class="px-4 py-3 border-r border-black uppercase text-black font-semibold">{{ $child->grade_level ?? 'GRADE PENDING' }}</td>
+                                    <td class="px-4 py-3 border-r border-black uppercase text-black font-semibold">{{ $learningModeLabel($child->learning_mode ?? null) }}</td>
+                                    <td class="px-4 py-3 text-right font-bold text-black">PHP {{ number_format($invoiceChildAmount, 2) }}</td>
                                 </tr>
                             @empty
                                 <tr>
@@ -251,9 +251,9 @@
                 </div>
 
                 <!-- 5. Total Bar styled exactly like the sky-blue box from the SOA template -->
-                <div class="mt-4 flex items-center justify-between border border-slate-350 bg-slate-50 px-4 py-3 rounded">
-                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Total Amount</span>
-                    <div class="bg-sky-200 border border-slate-400 text-slate-950 w-44 px-3 py-1.5 text-right font-black text-base rounded-sm">
+                <div class="mt-4 flex items-center justify-between border border-black bg-white px-4 py-3">
+                    <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-650">Total Amount</span>
+                    <div class="bg-sky-200 border border-black text-black w-44 px-3 py-1.5 text-right font-bold text-base rounded-sm">
                         PHP {{ number_format($invoiceTotal, 2) }}
                     </div>
                 </div>
