@@ -192,53 +192,53 @@
             <div class="mx-auto max-w-3xl overflow-hidden rounded-3xl border border-slate-350 bg-white p-6 font-sans text-xs shadow-sm">
                 
                 <!-- 1. School Header (Consistent with Official SOA) -->
-                <div class="flex items-center justify-between border-b-2 border-slate-400 pb-3">
-                    <span class="text-sm font-black text-slate-950 tracking-wider">AL MUNAWWARA ISLAMIC SCHOOL</span>
+                <div class="flex items-center justify-between border-b-2 border-[#1B365D] pb-3">
+                    <span class="text-sm font-black text-[#1B365D] tracking-wider">AL MUNAWWARA ISLAMIC SCHOOL</span>
                     <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS Logo" width="55" height="55" class="h-14 w-14 object-contain mx-auto">
                     <span class="text-base font-extrabold text-[#2E7D32] tracking-wider">المدرسة المنورة الإسلامية</span>
                 </div>
 
                 <!-- 2. Invoice Title Bar -->
-                <div class="bg-[#DFE7E6] border-y border-black py-1.5 text-center font-bold uppercase tracking-widest text-black mt-2">
+                <div class="bg-[#EBF2F7] border-y border-[#1B365D] py-1.5 text-center font-bold uppercase tracking-widest text-[#1B365D] mt-2">
                     INVOICE FOR ENROLLMENT SY 2026-2027
                 </div>
 
                 <!-- 3. Metadata Grid -->
-                <div class="grid gap-4 border-b border-slate-350 bg-slate-50 px-5 py-4 mt-3 rounded border border-slate-300 md:grid-cols-3 text-[10px]">
+                <div class="grid gap-4 bg-[#EBF2F7] px-5 py-4 mt-3 border border-[#1B365D] md:grid-cols-3 text-[10px]">
                     <div>
-                        <div class="font-bold text-slate-500 uppercase tracking-wide">Invoice No.</div>
+                        <div class="font-bold text-[#1B365D] uppercase tracking-wide">Invoice No.</div>
                         <div class="mt-1 font-black text-slate-950 text-xs">{{ $invoiceNo }}</div>
                     </div>
                     <div>
-                        <div class="font-bold text-slate-500 uppercase tracking-wide">Date</div>
+                        <div class="font-bold text-[#1B365D] uppercase tracking-wide">Date</div>
                         <div class="mt-1 font-black text-slate-950 text-xs">{{ optional($invoiceDate)->format('M d, Y h:i A') ?? 'Not provided' }}</div>
                     </div>
                     <div>
-                        <div class="font-bold text-slate-500 uppercase tracking-wide">Bill To</div>
+                        <div class="font-bold text-[#1B365D] uppercase tracking-wide">Bill To</div>
                         <div class="mt-1 font-black text-slate-950 text-xs uppercase">{{ $familyLabel }}</div>
                     </div>
                 </div>
 
                 <!-- 4. Items Table -->
-                <div class="mt-4 border border-black">
-                    <table class="w-full text-left text-[10px] border-collapse border border-black">
+                <div class="mt-4 border border-[#1B365D]">
+                    <table class="w-full text-left text-[10px] border-collapse border border-[#1B365D]">
                         <thead>
-                            <tr class="bg-[#DFE7E6] text-black font-bold border-b border-black uppercase">
-                                <th class="px-4 py-2 border-r border-black">Child</th>
-                                <th class="px-4 py-2 border-r border-black">Grade</th>
-                                <th class="px-4 py-2 border-r border-black">Learning Mode</th>
+                            <tr class="bg-[#EBF2F7] text-[#1B365D] font-bold border-b border-[#1B365D] uppercase">
+                                <th class="px-4 py-2 border-r border-[#1B365D]">Child</th>
+                                <th class="px-4 py-2 border-r border-[#1B365D]">Grade</th>
+                                <th class="px-4 py-2 border-r border-[#1B365D]">Learning Mode</th>
                                 <th class="px-4 py-2 text-right">Amount</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-black font-semibold text-black">
+                        <tbody class="divide-y divide-[#1B365D] font-semibold text-black">
                             @forelse ($invoiceChildren as $index => $child)
-                                <tr>
-                                    <td class="px-4 py-3 border-r border-black">
+                                <tr class="bg-white">
+                                    <td class="px-4 py-3 border-r border-[#1B365D]">
                                         <div class="font-bold text-black uppercase">{{ $index + 1 }}. {{ $child->full_name ?: 'Applicant' }}</div>
                                         <div class="text-[9px] font-semibold text-slate-500 mt-0.5 tracking-wider">APPLICANT #{{ str_pad((string) $child->id, 4, '0', STR_PAD_LEFT) }}</div>
                                     </td>
-                                    <td class="px-4 py-3 border-r border-black uppercase text-black font-semibold">{{ $child->grade_level ?? 'GRADE PENDING' }}</td>
-                                    <td class="px-4 py-3 border-r border-black uppercase text-black font-semibold">{{ $learningModeLabel($child->learning_mode ?? null) }}</td>
+                                    <td class="px-4 py-3 border-r border-[#1B365D] uppercase text-black font-semibold">{{ $child->grade_level ?? 'GRADE PENDING' }}</td>
+                                    <td class="px-4 py-3 border-r border-[#1B365D] uppercase text-black font-semibold">{{ $learningModeLabel($child->learning_mode ?? null) }}</td>
                                     <td class="px-4 py-3 text-right font-bold text-black">PHP {{ number_format($invoiceChildAmount, 2) }}</td>
                                 </tr>
                             @empty
@@ -250,10 +250,10 @@
                     </table>
                 </div>
 
-                <!-- 5. Total Bar styled exactly like the sky-blue box from the SOA template -->
-                <div class="mt-4 flex items-center justify-between border border-black bg-white px-4 py-3">
-                    <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-650">Total Amount</span>
-                    <div class="bg-sky-200 border border-black text-black w-44 px-3 py-1.5 text-right font-bold text-base rounded-sm">
+                <!-- 5. Total Bar styled exactly like the official blue total amount box -->
+                <div class="mt-4 flex items-center justify-between border border-[#1B365D] bg-white px-4 py-3">
+                    <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1B365D]">TOTAL AMOUNT</span>
+                    <div class="bg-[#DCE6F1] border border-[#1B365D] text-[#1B365D] w-44 px-3 py-1.5 text-right font-bold text-sm rounded-sm">
                         PHP {{ number_format($invoiceTotal, 2) }}
                     </div>
                 </div>
