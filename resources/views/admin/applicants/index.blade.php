@@ -203,7 +203,7 @@
                                                 :fallback-initials="$childInitials ?: 'ST'"
                                                 size="40"
                                                 rounded="rounded-lg"
-                                                :eager="true"
+                                                :eager="false"
                                             />
                                             <div>
                                                 <div class="font-extrabold text-slate-950">{{ $childName }}</div>

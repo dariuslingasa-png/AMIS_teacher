@@ -5,7 +5,7 @@
     'size' => '40',
     'rounded' => 'rounded-lg',
     'containerClass' => '',
-    'eager' => true,
+    'eager' => false,
 ])
 
 @php
@@ -14,15 +14,16 @@
 @endphp
 
 @if ($src)
-    <div class="shrink-0 overflow-hidden bg-gray-100 flex items-center justify-center {{ $rounded }} {{ $containerClass }}" style="width:{{ $px }}px;height:{{ $px }}px;">
+    <div class="shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200 {{ $rounded }} {{ $containerClass }}" style="width:{{ $px }}px;height:{{ $px }}px;">
         <img
             src="{{ $src }}"
             alt="{{ $alt }}"
-            class="w-full h-full object-cover block"
+            class="w-full h-full object-cover block opacity-0 transition-opacity duration-300"
             width="{{ $px }}"
             height="{{ $px }}"
             loading="{{ $eager ? 'eager' : 'lazy' }}"
-            decoding="{{ $eager ? 'async' : 'auto' }}"
+            decoding="async"
+            onload="this.classList.remove('opacity-0')"
         >
     </div>
 @else
