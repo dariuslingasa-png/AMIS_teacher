@@ -189,63 +189,74 @@
         </section>
 
         <x-card title="Invoice" subtitle="Invoice, payment details, proof, and finance review">
-            <div class="mx-auto max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-200 bg-slate-950 px-6 py-7 text-center text-white">
-                    <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS Logo" class="mx-auto h-16 w-16 rounded-full bg-white p-1">
-                    <div class="mt-3 text-xl font-black uppercase tracking-wide">AMIS Admin Portal</div>
-                    <div class="text-xs font-black uppercase tracking-[0.25em] text-emerald-200">School Finance</div>
+            <div class="mx-auto max-w-3xl overflow-hidden rounded-3xl border border-slate-350 bg-white p-6 font-sans text-xs shadow-sm">
+                
+                <!-- 1. School Header (Consistent with Official SOA) -->
+                <div class="flex items-center justify-between border-b-2 border-slate-400 pb-3">
+                    <span class="text-sm font-black text-slate-900 tracking-wider">AL MUNAWWARA ISLAMIC SCHOOL</span>
+                    <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS Logo" width="50" height="50" class="h-12 w-12 rounded-full border border-slate-200 object-contain mx-auto">
+                    <span class="text-base font-bold text-emerald-700 tracking-wider" style="font-family: 'Courier New', Courier, monospace; font-weight: 900;">المدرسة المنورة الإسلامية</span>
                 </div>
 
-                <div class="grid gap-4 border-b border-slate-200 bg-slate-50 px-6 py-5 md:grid-cols-3">
+                <!-- 2. Invoice Title Bar -->
+                <div class="bg-slate-100 border-x border-b border-slate-400 py-1.5 text-center font-black uppercase tracking-widest text-slate-950 mt-2 border-t-2 border-slate-400">
+                    INVOICE FOR ENROLLMENT SY 2026-2027
+                </div>
+
+                <!-- 3. Metadata Grid -->
+                <div class="grid gap-4 border-b border-slate-350 bg-slate-50 px-5 py-4 mt-3 rounded border border-slate-300 md:grid-cols-3 text-[10px]">
                     <div>
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Invoice No.</div>
-                        <div class="mt-1 text-sm font-black text-slate-950">{{ $invoiceNo }}</div>
+                        <div class="font-bold text-slate-500 uppercase tracking-wide">Invoice No.</div>
+                        <div class="mt-1 font-black text-slate-950 text-xs">{{ $invoiceNo }}</div>
                     </div>
                     <div>
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Date</div>
-                        <div class="mt-1 text-sm font-black text-slate-950">{{ optional($invoiceDate)->format('M d, Y h:i A') ?? 'Not provided' }}</div>
+                        <div class="font-bold text-slate-500 uppercase tracking-wide">Date</div>
+                        <div class="mt-1 font-black text-slate-950 text-xs">{{ optional($invoiceDate)->format('M d, Y h:i A') ?? 'Not provided' }}</div>
                     </div>
                     <div>
-                        <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Bill To</div>
-                        <div class="mt-1 text-sm font-black text-slate-950">{{ $familyLabel }}</div>
+                        <div class="font-bold text-slate-500 uppercase tracking-wide">Bill To</div>
+                        <div class="mt-1 font-black text-slate-950 text-xs uppercase">{{ $familyLabel }}</div>
                     </div>
                 </div>
 
-                <div class="px-6 py-6">
-                    <div class="overflow-x-auto">
-                        <table class="w-full min-w-[720px] text-left text-sm">
-                            <thead>
-                                <tr class="border-b border-slate-200 text-[11px] font-black uppercase tracking-[0.22em] text-slate-400">
-                                    <th class="py-3 pr-4">Child</th>
-                                    <th class="px-4 py-3">Grade</th>
-                                    <th class="px-4 py-3">Learning Mode</th>
-                                    <th class="py-3 pl-4 text-right">Amount</th>
+                <!-- 4. Items Table -->
+                <div class="mt-4 border border-slate-350 rounded overflow-hidden">
+                    <table class="w-full text-left text-[10px] border-collapse">
+                        <thead>
+                            <tr class="bg-[#CAD4D6] text-slate-900 font-black border-b border-slate-350 uppercase">
+                                <th class="px-4 py-2 border-r border-slate-350">Child</th>
+                                <th class="px-4 py-2 border-r border-slate-350">Grade</th>
+                                <th class="px-4 py-2 border-r border-slate-350">Learning Mode</th>
+                                <th class="px-4 py-2 text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-300 font-bold text-slate-800">
+                            @forelse ($invoiceChildren as $index => $child)
+                                <tr>
+                                    <td class="px-4 py-3 border-r border-slate-350">
+                                        <div class="font-black text-slate-950 uppercase">{{ $index + 1 }}. {{ $child->full_name ?: 'Applicant' }}</div>
+                                        <div class="text-[9px] font-semibold text-slate-400 mt-0.5 tracking-wider">APPLICANT #{{ str_pad((string) $child->id, 4, '0', STR_PAD_LEFT) }}</div>
+                                    </td>
+                                    <td class="px-4 py-3 border-r border-slate-350 uppercase">{{ $child->grade_level ?? 'GRADE PENDING' }}</td>
+                                    <td class="px-4 py-3 border-r border-slate-350 uppercase">{{ $learningModeLabel($child->learning_mode ?? null) }}</td>
+                                    <td class="px-4 py-3 text-right font-black text-slate-950">PHP {{ number_format($invoiceChildAmount, 2) }}</td>
                                 </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                @forelse ($invoiceChildren as $index => $child)
-                                    <tr>
-                                        <td class="py-4 pr-4 font-black uppercase text-slate-950">
-                                            <div>{{ $index + 1 }}. {{ $child->full_name ?: 'Applicant' }}</div>
-                                            <div class="text-[10px] font-semibold text-slate-400 mt-0.5 tracking-wider">APPLICANT #{{ str_pad((string) $child->id, 4, '0', STR_PAD_LEFT) }}</div>
-                                        </td>
-                                        <td class="px-4 py-4 font-black uppercase text-slate-700">{{ $child->grade_level ?? 'GRADE PENDING' }}</td>
-                                        <td class="px-4 py-4 font-black uppercase text-slate-700">{{ $learningModeLabel($child->learning_mode ?? null) }}</td>
-                                        <td class="py-4 pl-4 text-right text-base font-black text-slate-950">PHP {{ number_format($invoiceChildAmount, 2) }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="py-10 text-center text-sm font-bold text-slate-400">No child record found.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="px-4 py-8 text-center text-slate-400 font-bold">No child record found.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
 
-                    <div class="mt-4 flex items-center justify-between border-y border-slate-200 bg-slate-50 px-4 py-4">
-                        <span class="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Total Amount</span>
-                        <span class="text-2xl font-black text-emerald-700">PHP {{ number_format($invoiceTotal, 2) }}</span>
+                <!-- 5. Total Bar styled exactly like the sky-blue box from the SOA template -->
+                <div class="mt-4 flex items-center justify-between border border-slate-350 bg-slate-50 px-4 py-3 rounded">
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Total Amount</span>
+                    <div class="bg-sky-200 border border-slate-400 text-slate-950 w-44 px-3 py-1.5 text-right font-black text-base rounded-sm">
+                        PHP {{ number_format($invoiceTotal, 2) }}
                     </div>
+                </div>
 
                     <div class="mt-7">
                         <h3 class="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Payment Proofs</h3>
