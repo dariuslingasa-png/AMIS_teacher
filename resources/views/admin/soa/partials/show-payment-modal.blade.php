@@ -73,7 +73,7 @@
                 <!-- Checked and Verified By -->
                 <div>
                     <label class="mb-1.5 block text-[11px] font-black text-slate-500 uppercase tracking-wider">Checked & Verified By</label>
-                    <input name="checked_by" value="Sir Cabel" readonly class="w-full rounded-xl border border-slate-200 bg-slate-100 p-3 text-sm font-bold text-slate-600 cursor-not-allowed outline-none">
+                    <input name="checked_by" value="{{ config('services.school.finance_reviewer_name', 'Finance Office') }}" readonly class="w-full rounded-xl border border-slate-200 bg-slate-100 p-3 text-sm font-bold text-slate-600 cursor-not-allowed outline-none">
                 </div>
 
                 <!-- Action Buttons: Cancel and Submit -->

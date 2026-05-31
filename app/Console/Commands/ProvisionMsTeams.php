@@ -8,12 +8,12 @@ use Illuminate\Console\Command;
 
 class ProvisionMsTeams extends Command
 {
-    protected $signature   = 'ms-teams:provision {--year=2026-2027 : School year to provision}';
+    protected $signature   = 'ms-teams:provision {--year= : School year to provision}';
     protected $description = 'Auto-create all K-12 grade Teams + Boys/Girls private channels in MS Teams';
 
     public function handle(): int
     {
-        $schoolYear = $this->option('year');
+        $schoolYear = $this->option('year') ?: config('services.school.year', '2026-2027');
 
         $this->info("Provisioning MS Teams for all K-12 grades — SY {$schoolYear}");
         $this->info('This may take a few minutes due to MS Teams API provisioning delays...');

@@ -14,8 +14,10 @@ class SchoolFee extends Model
         'books_fee'   => 'decimal:2',
     ];
 
-    public static function forGrade(string $gradeLevel, string $schoolYear = '2026-2027'): ?self
+    public static function forGrade(string $gradeLevel, ?string $schoolYear = null): ?self
     {
+        $schoolYear ??= (string) config('services.school.year', '2026-2027');
+
         return static::where('grade_level', $gradeLevel)->where('school_year', $schoolYear)->first();
     }
 }

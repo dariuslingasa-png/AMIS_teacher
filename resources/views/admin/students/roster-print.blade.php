@@ -194,7 +194,7 @@
 
         <section>
             <h2>Officially Enrolled Student List</h2>
-            <div class="muted">Academic Year {{ $section->school_year ?? $section->students->first()?->student?->school_year ?? '2025-2026' }}</div>
+            <div class="muted">Academic Year {{ $section->school_year ?? $section->students->first()?->student?->school_year ?? config('services.school.previous_year', '2025-2026') }}</div>
         </section>
 
         <table class="meta">
@@ -265,7 +265,7 @@
             </div>
             <div class="sign">
                 <div class="line">AMIS Registrar Office</div>
-                <div>School Year {{ $section->school_year ?? $section->students->first()?->student?->school_year ?? '2025-2026' }}</div>
+                <div>School Year {{ $section->school_year ?? $section->students->first()?->student?->school_year ?? config('services.school.previous_year', '2025-2026') }}</div>
             </div>
         </footer>
     </main>

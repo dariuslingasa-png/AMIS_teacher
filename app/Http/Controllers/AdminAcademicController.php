@@ -11,6 +11,7 @@ class AdminAcademicController extends Controller
 {
     public function dashboard()
     {
+        $schoolYear = (string) config('services.school.year', '2026-2027');
         $subjects = SubjectModel::orderBy('grade_level')->get();
         $sections = Section::withCount('students')->get();
 
@@ -22,7 +23,7 @@ class AdminAcademicController extends Controller
             'subjects' => $subjects->count(),
             'sections' => $sections->count(),
             'students' => $sections->sum('students_count'),
-            'school_year' => '2026-2027',
+            'school_year' => $schoolYear,
         ];
 
         $academicCharts = [
@@ -56,6 +57,7 @@ class AdminAcademicController extends Controller
 
     public function subjects()
     {
+        $schoolYear = (string) config('services.school.year', '2026-2027');
         $subjects = SubjectModel::orderBy('grade_level')->get();
         if ($subjects->isEmpty()) {
             // Seed sample subjects
@@ -73,7 +75,7 @@ class AdminAcademicController extends Controller
                 ['name' => 'Filipino', 'code' => 'FIL2', 'grade_level' => 'Grade 2'],
             ];
             foreach ($samples as $s) {
-                SubjectModel::create(array_merge($s, ['school_year' => '2026-2027']));
+                SubjectModel::create(array_merge($s, ['school_year' => $schoolYear]));
             }
             $subjects = SubjectModel::orderBy('grade_level')->get();
         }
@@ -82,6 +84,8 @@ class AdminAcademicController extends Controller
 
     public function curriculum()
     {
+        $schoolYear = (string) config('services.school.year', '2026-2027');
+        $previousSchoolYear = (string) config('services.school.previous_year', '2025-2026');
         $subjects = SubjectModel::orderBy('grade_level')->get();
         if ($subjects->isEmpty()) {
             // Seed sample subjects
@@ -99,19 +103,19 @@ class AdminAcademicController extends Controller
                 ['name' => 'Filipino', 'code' => 'FIL2', 'grade_level' => 'Grade 2'],
             ];
             foreach ($samples as $s) {
-                SubjectModel::create(array_merge($s, ['school_year' => '2026-2027']));
+                SubjectModel::create(array_merge($s, ['school_year' => $schoolYear]));
             }
             $subjects = SubjectModel::orderBy('grade_level')->get();
         }
         $sections = Section::withCount('students')->get();
         $schoolYears = [
             ['year' => '2024-2025', 'semester' => '2nd Semester', 'status' => 'Completed', 'enrolled' => 84],
-            ['year' => '2025-2026', 'semester' => '1st Semester', 'status' => 'Active', 'enrolled' => 99],
-            ['year' => '2026-2027', 'semester' => '1st Semester', 'status' => 'Upcoming', 'enrolled' => 0],
+            ['year' => $previousSchoolYear, 'semester' => '1st Semester', 'status' => 'Active', 'enrolled' => 99],
+            ['year' => $schoolYear, 'semester' => '1st Semester', 'status' => 'Upcoming', 'enrolled' => 0],
         ];
         $events = [
             ['date' => '2026-06-01', 'title' => 'Start of Regular Enrollment', 'type' => 'Enrollment'],
-            ['date' => '2026-06-15', 'title' => 'First Day of Classes (SY 2026-2027)', 'type' => 'Academic'],
+            ['date' => '2026-06-15', 'title' => "First Day of Classes (SY {$schoolYear})", 'type' => 'Academic'],
             ['date' => '2026-07-20', 'title' => 'Islamic New Year (1 Muharram) - Holiday', 'type' => 'Holiday'],
             ['date' => '2026-08-10', 'title' => 'Preliminary Examinations', 'type' => 'Exam'],
             ['date' => '2026-09-18', 'title' => 'Maulidur Rasul - Holiday', 'type' => 'Holiday'],
@@ -147,19 +151,22 @@ class AdminAcademicController extends Controller
 
     public function schoolYears()
     {
+        $schoolYear = (string) config('services.school.year', '2026-2027');
+        $previousSchoolYear = (string) config('services.school.previous_year', '2025-2026');
         $schoolYears = [
             ['year' => '2024-2025', 'semester' => '2nd Semester', 'status' => 'Completed', 'enrolled' => 84],
-            ['year' => '2025-2026', 'semester' => '1st Semester', 'status' => 'Active', 'enrolled' => 99],
-            ['year' => '2026-2027', 'semester' => '1st Semester', 'status' => 'Upcoming', 'enrolled' => 0],
+            ['year' => $previousSchoolYear, 'semester' => '1st Semester', 'status' => 'Active', 'enrolled' => 99],
+            ['year' => $schoolYear, 'semester' => '1st Semester', 'status' => 'Upcoming', 'enrolled' => 0],
         ];
         return view('admin.academic.school-years', compact('schoolYears'));
     }
 
     public function calendar()
     {
+        $schoolYear = (string) config('services.school.year', '2026-2027');
         $events = [
             ['date' => '2026-06-01', 'title' => 'Start of Regular Enrollment', 'type' => 'Enrollment'],
-            ['date' => '2026-06-15', 'title' => 'First Day of Classes (SY 2026-2027)', 'type' => 'Academic'],
+            ['date' => '2026-06-15', 'title' => "First Day of Classes (SY {$schoolYear})", 'type' => 'Academic'],
             ['date' => '2026-07-20', 'title' => 'Islamic New Year (1 Muharram) - Holiday', 'type' => 'Holiday'],
             ['date' => '2026-08-10', 'title' => 'Preliminary Examinations', 'type' => 'Exam'],
             ['date' => '2026-09-18', 'title' => 'Maulidur Rasul - Holiday', 'type' => 'Holiday'],

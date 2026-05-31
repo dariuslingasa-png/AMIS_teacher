@@ -1,5 +1,5 @@
 <x-admin-layout title="Enrollment Payment Approval">
-    <x-card title="Enrollment Payment Approval" subtitle="Finance Management by Sir Cabel">
+    <x-card title="Enrollment Payment Approval" subtitle="Finance Management by {{ config('services.school.finance_reviewer_name', 'Finance Office') }}">
         <form method="GET" class="mb-4 flex gap-3">
             <select name="status" class="rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm">
                 <option value="">All statuses</option>

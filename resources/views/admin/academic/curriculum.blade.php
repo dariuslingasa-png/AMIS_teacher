@@ -132,7 +132,7 @@
                                 <span class="text-[11px] text-emerald-600 font-medium">Applied for Kindergarten, Grade 1, 4, and 7</span>
                             </div>
                         </div>
-                        <span class="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-3.5 py-1.5 rounded-xl border border-emerald-200/40 w-max shrink-0">SY 2025-2026 onwards</span>
+                        <span class="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-3.5 py-1.5 rounded-xl border border-emerald-200/40 w-max shrink-0">SY {{ config('services.school.previous_year', '2025-2026') }} onwards</span>
                     </div>
                     <div class="space-y-2">
                         <label class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Description</label>

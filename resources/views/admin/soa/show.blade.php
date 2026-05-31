@@ -1,7 +1,11 @@
 @php
     $studentName = $account->student?->applicant?->full_name ?: ($account->applicant?->full_name ?: 'Student');
-    $address = $account->student?->applicant?->address ?: ($account->applicant?->address ?: 'Bugac Ma-a Road, Davao City');
-    $email = $account->student?->applicant?->email ?: ($account->applicant?->email ?: 'almunawwaraislamicschool@gmail.com');
+    $schoolYear = (string) config('services.school.year', '2026-2027');
+    $schoolAddress = (string) config('services.school.address', 'Bugac Ma-a Road, Davao City');
+    $schoolEmail = (string) config('services.school.email', 'almunawwaraislamicschool@gmail.com');
+    $enrollmentFee = (float) config('services.school.enrollment_fee', 4000);
+    $address = $account->student?->applicant?->address ?: ($account->applicant?->address ?: $schoolAddress);
+    $email = $account->student?->applicant?->email ?: ($account->applicant?->email ?: $schoolEmail);
     $lrn = $account->student?->applicant?->lrn ?: ($account->applicant?->lrn ?: 'NA');
     $studentId = $account->student?->student_number ?? '260001';
     $category = $account->student?->applicant?->student_type ?: ($account->applicant?->student_type ?: 'Elementary');
@@ -37,7 +41,7 @@
         }
     } else {
         // Fallback for draft/pending preview
-        $enrollPaid = 4000.00;
+        $enrollPaid = $enrollmentFee;
     }
     
     $booksPaid = 0.00;
@@ -105,11 +109,10 @@
     $installmentAmount = $account->monthly_tuition > 0 ? (float)$account->monthly_tuition : round($account->total_balance / $billingMonthsCount, 2);
     $remainingBalance = (float) $account->remaining_balance;
 
-    // Define comparison date for displaying running balances of monthly installments.
-    // If the actual date is before October 2026, default to October 31, 2026 to allow full simulated scenario testing!
     $currentDate = now();
-    if ($currentDate->lt(\Carbon\Carbon::parse('2026-10-31'))) {
-        $currentDate = \Carbon\Carbon::parse('2026-10-31');
+    $soaPreviewDate = config('services.school.soa_preview_date');
+    if ($soaPreviewDate && $currentDate->lt(\Carbon\Carbon::parse($soaPreviewDate))) {
+        $currentDate = \Carbon\Carbon::parse($soaPreviewDate);
     }
 @endphp
 

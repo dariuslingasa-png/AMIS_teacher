@@ -244,12 +244,12 @@ class Invoice extends Model
             })->get();
 
             // Compute total amount (₱4,000 per child)
-            $amountPerChild = 4000.00;
+            $amountPerChild = (float) config('services.school.enrollment_fee', 4000);
             $totalAmount = $children->count() * $amountPerChild;
 
             // Generate unique sequential invoice number (INV-000204 format)
             $nextId = (self::max('id') ?: 0) + 1;
-            $invoiceNo = 'INV-' . str_pad((string)($nextId + 203), 6, '0', STR_PAD_LEFT);
+            $invoiceNo = 'INV-' . str_pad((string)($nextId + (int) config('services.school.invoice_id_offset', 203)), 6, '0', STR_PAD_LEFT);
 
             $invoice = self::create([
                 'invoice_no'            => $invoiceNo,

@@ -384,7 +384,7 @@ class MicrosoftGraphService
         $teacher = $section['teacher'] ?? null;
 
         $modeLabel = str_contains($mode, 'Flexible') ? 'Flexible Online Learning' : 'Face-to-Face';
-        $studentPortalUrl = env('STUDENT_PORTAL_URL', 'http://127.0.0.1:8001');
+        $studentPortalUrl = (string) config('services.student_portal_url');
 
         if ($subject) {
             // Channel welcome — subject-specific

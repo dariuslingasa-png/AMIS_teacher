@@ -4,7 +4,10 @@
     $familyNo = $applicant?->family_application_id ?: $applicant?->id;
     $invoiceNo = isset($invoice) ? $invoice->invoice_no : 'INV-ENR-'.str_pad((string) $payment->id, 5, '0', STR_PAD_LEFT);
     $invoiceDate = $payment->paid_at ?? $payment->created_at;
-    $invoiceChildAmount = 4000.00;
+    $schoolYear = (string) config('services.school.year', '2026-2027');
+    $schoolAddress = (string) config('services.school.address', 'Bugac Ma-a Road, Davao City');
+    $schoolEmail = (string) config('services.school.email', 'almunawwaraislamicschool@gmail.com');
+    $invoiceChildAmount = (float) config('services.school.enrollment_fee', 4000);
     $invoiceChildren = $familyChildren->isNotEmpty() ? $familyChildren : collect([$applicant])->filter();
     $invoiceTotal = isset($invoice) ? (float) $invoice->total_amount : $invoiceChildren->count() * $invoiceChildAmount;
     $canReviewPayments = auth()->user()?->canReviewEnrollmentPayments() ?? false;

@@ -111,6 +111,8 @@ class AdminMsSyncController extends Controller
      */
     public function importFromAzure(\Illuminate\Http\Request $request)
     {
+        $schoolYear = (string) config('services.school.year', '2026-2027');
+
         $request->validate([
             'azure_id'    => 'required|string',
             'upn'         => 'required|email',
@@ -162,7 +164,7 @@ class AdminMsSyncController extends Controller
             'ms_user_id'            => $azureId,
             'ms_account_created_at' => now(),
             'grade_level'           => 'Unknown', // admin can update later
-            'school_year'           => '2026-2027',
+            'school_year'           => $schoolYear,
             'credentials_sent_at'   => now(),
         ]);
 
@@ -174,6 +176,8 @@ class AdminMsSyncController extends Controller
      */
     public function importAll()
     {
+        $schoolYear = (string) config('services.school.year', '2026-2027');
+
         $graph      = new MicrosoftGraphService();
         $azureUsers = $graph->listTenantStudents();
 
@@ -220,7 +224,7 @@ class AdminMsSyncController extends Controller
                     'ms_user_id'              => $azId,
                     'ms_account_created_at'   => now(),
                     'grade_level'             => 'Unknown',
-                    'school_year'             => '2026-2027',
+                    'school_year'             => $schoolYear,
                     'credentials_sent_at'     => now(),
                 ]);
 

@@ -72,22 +72,24 @@ class SoaService
         $enrollPaid = 0.00;
         $excessPaid = 0.00;
         $enrolleeCount = $familyEnrollees->count();
+        $enrollmentFee = (float) config('services.school.enrollment_fee', 4000);
+        $financeCheckedBy = (string) config('services.school.finance_checked_by', 'System / Finance');
         
         if ($totalVerifiedAmount > 0 && $enrolleeCount > 0) {
-            $requiredEnrollmentTotal = 4000.00 * $enrolleeCount;
+            $requiredEnrollmentTotal = $enrollmentFee * $enrolleeCount;
             if ($totalVerifiedAmount <= $requiredEnrollmentTotal) {
                 // If payment is less than or equal to required enrollment fee, divide equally per child
                 $enrollPaid = round($totalVerifiedAmount / $enrolleeCount, 2);
                 $excessPaid = 0.00;
             } else {
-                // If payment is more than required enrollment fee, fully pay enrollment fee first (4k), then divide excess equally
-                $enrollPaid = 4000.00;
+                // If payment is more than required enrollment fee, fully pay enrollment fee first, then divide excess equally
+                $enrollPaid = $enrollmentFee;
                 $excessTotal = $totalVerifiedAmount - $requiredEnrollmentTotal;
                 $excessPaid = round($excessTotal / $enrolleeCount, 2);
             }
         } else {
-            // Default draft/unpaid fallback (4k if draft/unapproved estimate, or 0.00 if officially unverified)
-            $enrollPaid = $applicant->status === 'approved' ? 0.00 : 4000.00;
+            // Default draft/unpaid fallback for preview estimates.
+            $enrollPaid = $applicant->status === 'approved' ? 0.00 : $enrollmentFee;
             $excessPaid = 0.00;
         }
 
@@ -117,14 +119,14 @@ class SoaService
             // Use the first verified payment as representative for Gcash receipt metadata
             $repPayment = $verifiedPayments->first();
             
-            // 1. Create Enrollment Fee payment record (up to 4000.00)
+            // 1. Create Enrollment Fee payment record.
             StudentAccountPayment::create([
                 'student_account_id' => $account->id,
                 'student_id'         => $student->id,
                 'method'             => $repPayment->method,
                 'reference_no'       => $repPayment->reference_no,
                 'or_number'          => $repPayment->or_number ?? $repPayment->reference_no,
-                'checked_by'         => 'System / Finance',
+                'checked_by'         => $financeCheckedBy,
                 'amount'             => $enrollPaid, // Allocated paid enrollment downpayment!
                 'status'             => 'verified',
                 'remarks'            => 'Paid Enrollment Fee (Allocated)',
@@ -140,7 +142,7 @@ class SoaService
                     'method'             => $repPayment->method,
                     'reference_no'       => $repPayment->reference_no,
                     'or_number'          => ($repPayment->or_number ?? $repPayment->reference_no) . '-EXCESS',
-                    'checked_by'         => 'System / Finance',
+                    'checked_by'         => $financeCheckedBy,
                     'amount'             => $excessPaid, // Additional SOA paid!
                     'status'             => 'verified',
                     'remarks'            => 'Paid Additional SOA Paid (Allocated Excess)',

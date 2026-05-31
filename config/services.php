@@ -41,9 +41,22 @@ return [
         'tenant_id'      => env('MICROSOFT_TENANT_ID'),
         'admin_upn'      => env('MICROSOFT_ADMIN_UPN'),
         'admin_password' => env('MICROSOFT_ADMIN_PASSWORD'),
-        'redirect_uri'   => env('MICROSOFT_REDIRECT_URI', 'http://127.0.0.1:8000/auth/microsoft/callback'),
+        'redirect_uri'   => env('MICROSOFT_REDIRECT_URI', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/auth/microsoft/callback'),
     ],
 
     'enrollment_storage_url' => env('ENROLLMENT_STORAGE_URL'),
+    'student_portal_url' => env('STUDENT_PORTAL_URL', env('APP_URL')),
+
+    'school' => [
+        'year'                  => env('SCHOOL_YEAR', '2026-2027'),
+        'previous_year'         => env('SCHOOL_PREVIOUS_YEAR', '2025-2026'),
+        'enrollment_fee'        => (float) env('SCHOOL_ENROLLMENT_FEE', 4000),
+        'finance_reviewer_name' => env('FINANCE_REVIEWER_NAME', 'Finance Office'),
+        'finance_checked_by'    => env('FINANCE_CHECKED_BY', 'System / Finance'),
+        'address'               => env('SCHOOL_ADDRESS', 'Bugac Ma-a Road, Davao City'),
+        'email'                 => env('SCHOOL_EMAIL', 'almunawwaraislamicschool@gmail.com'),
+        'soa_preview_date'      => env('SOA_PREVIEW_DATE'),
+        'invoice_id_offset'     => (int) env('INVOICE_ID_OFFSET', 203),
+    ],
 
 ];

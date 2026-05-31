@@ -13,12 +13,13 @@
     $paymentIsPdf = $payment?->receipt_url && strtolower(pathinfo($payment->receipt_url, PATHINFO_EXTENSION)) === 'pdf';
     $canReviewPayments = auth()->user()?->canReviewEnrollmentPayments() ?? false;
     $canReviewApplications = auth()->user()?->canReviewEnrollmentApplications() ?? false;
+    $financeReviewer = (string) config('services.school.finance_reviewer_name', 'Finance Office');
     $paymentReadinessLabel = match (true) {
-        !$payment?->receipt_url => 'Waiting for Verification (Sir Cabel)',
-        $payment->status === 'verified' && $applicant->status === 'approved' => 'Approved by Sir Cabel',
-        $payment->status === 'verified' => 'Verified by Sir Cabel',
-        $payment->status === 'rejected' => 'Rejected by Sir Cabel ❌',
-        default => 'Waiting for Verification (Sir Cabel)',
+        !$payment?->receipt_url => "Waiting for Verification ({$financeReviewer})",
+        $payment->status === 'verified' && $applicant->status === 'approved' => "Approved by {$financeReviewer}",
+        $payment->status === 'verified' => "Verified by {$financeReviewer}",
+        $payment->status === 'rejected' => "Rejected by {$financeReviewer}",
+        default => "Waiting for Verification ({$financeReviewer})",
     };
     $approvalReadinessLabel = match (true) {
         $applicant->status === 'approved' && $paymentOk => 'Enrollment Approved ✅',
@@ -533,7 +534,7 @@
                         @if (!$paymentOk)
                             <div class="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold leading-5 text-rose-700">
                                 @if ($payment?->status === 'rejected')
-                                    Payment rejected by Sir Cabel. Enrollment is on hold.
+                                    Payment rejected by {{ $financeReviewer }}. Enrollment is on hold.
                                 @else
                                     Enrollment fee is PRIOR. Do not approve until payment is uploaded and verified.
                                 @endif
@@ -634,3 +635,4 @@
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </x-admin-layout>
+

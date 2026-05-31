@@ -20,7 +20,7 @@
 
                     <!-- 2. Statement Title Bar (Exact recreation with #e8eee7 background and #618889 bottom line, with increased font size) -->
                     <div class="bg-sage-light border-b-sage-dark py-4 text-center font-bold uppercase tracking-widest text-black" style="font-size: 32px !important; line-height: 1.4 !important;">
-                        STATEMENT OF ACCOUNT SY 2026-2027
+                        STATEMENT OF ACCOUNT SY {{ $account->school_year ?? $schoolYear }}
                     </div>
 
                     <!-- 3. Secondary Layout (Metadata Left + Vertical Divider Bar + Right Student details and Tuition stacked) -->
@@ -30,11 +30,11 @@
                         <div class="space-y-4 self-start" style="line-height: 1.5 !important; padding-left: 16px !important; padding-right: 24px !important;">
                             <div>
                                 <h4 class="font-bold text-slate-500" style="font-size: 19.5px !important;">Address:</h4>
-                                <p class="font-bold text-slate-900 mt-0.5" style="font-size: 19.5px !important;">Bugac Ma-a Road, Davao City</p>
+                                <p class="font-bold text-slate-900 mt-0.5" style="font-size: 19.5px !important;">{{ $schoolAddress }}</p>
                             </div>
                             <div class="mt-3">
                                 <h4 class="font-bold text-slate-500" style="font-size: 19.5px !important;">Email Add:</h4>
-                                <p class="font-bold text-slate-900 mt-0.5 leading-tight" style="font-size: 16.5px !important; white-space: nowrap !important;">almunawwaraislamicschool@gmail.com</p>
+                                <p class="font-bold text-slate-900 mt-0.5 leading-tight" style="font-size: 16.5px !important; white-space: nowrap !important;">{{ $schoolEmail }}</p>
                             </div>
                             <!-- Sahih Quote -->
                             <div class="pt-3">

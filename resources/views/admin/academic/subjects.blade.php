@@ -5,7 +5,7 @@
         activeMode: 'f2f',
         activeGrade: 'All',
         createModal: false,
-        name: '', code: '', grade: 'Grade 1', sy: '2026-2027',
+        name: '', code: '', grade: 'Grade 1', sy: @js(config('services.school.year', '2026-2027')),
         showSkeleton: false,
         isSaving: false,
         triggerSearch(val) {
@@ -91,7 +91,7 @@
                     </div>
                 </div>
                 <div class="mt-3">
-                    <span class="text-2xl md:text-3xl font-extrabold text-gray-900 group-hover:text-amber-600 transition-colors">2026-2027</span>
+                    <span class="text-2xl md:text-3xl font-extrabold text-gray-900 group-hover:text-amber-600 transition-colors">{{ config('services.school.year', '2026-2027') }}</span>
                     <p class="text-[11px] text-gray-400 mt-1 font-medium">Active target year</p>
                 </div>
             </div>

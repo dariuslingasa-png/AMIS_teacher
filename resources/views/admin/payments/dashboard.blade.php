@@ -8,7 +8,7 @@
             <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <span class="inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-amber-50">Finance Management</span>
-                    <h1 class="mt-4 text-3xl font-black tracking-tight">Sir Cabel Finance Workspace</h1>
+                    <h1 class="mt-4 text-3xl font-black tracking-tight">{{ config('services.school.finance_reviewer_name', 'Finance Office') }} Finance Workspace</h1>
                     <p class="mt-2 max-w-2xl text-sm font-medium leading-6 text-amber-50/90">
                         Review enrollment payment proofs, monitor missing receipts, and open SOA records from one finance dashboard.
                     </p>
