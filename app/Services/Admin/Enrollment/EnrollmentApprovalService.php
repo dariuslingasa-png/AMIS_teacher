@@ -143,11 +143,30 @@ class EnrollmentApprovalService
 
     private function generateSoa(Student $student, EnrollmentApplicant $applicant): void
     {
+        if (! $this->shouldGenerateSoa($applicant)) {
+            Log::info('SOA generation skipped for non-new student applicant '.$applicant->id, [
+                'student_type' => $applicant->student_type,
+            ]);
+
+            return;
+        }
+
         try {
             (new SoaService())->generate($student, $applicant);
         } catch (\Throwable $exception) {
             Log::error('SOA generation failed: '.$exception->getMessage());
         }
+    }
+
+    private function shouldGenerateSoa(EnrollmentApplicant $applicant): bool
+    {
+        $studentType = Str::of((string) $applicant->student_type)
+            ->lower()
+            ->replace(['_', '-'], ' ')
+            ->squish()
+            ->toString();
+
+        return $studentType === 'new' || $studentType === 'new student';
     }
 
     private function sendOnboardingIfPossible(
