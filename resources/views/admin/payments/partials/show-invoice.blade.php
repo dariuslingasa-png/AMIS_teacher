@@ -1,7 +1,7 @@
         <div class="mt-6"></div>
 
         <x-card title="Invoice" subtitle="Invoice, payment details, proof, and finance review">
-            <div class="mx-auto max-w-3xl overflow-hidden bg-white font-sans text-xs shadow-sm p-8 rounded-3xl border border-slate-200">
+            <div class="overflow-hidden bg-white font-sans text-xs shadow-sm p-8 rounded-3xl border border-slate-200">
                 
                 <!-- 1. School Header (Exact recreation of official design reference) -->
                 <div class="border-t border-black pt-2">
