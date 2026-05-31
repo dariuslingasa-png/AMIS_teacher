@@ -18,6 +18,7 @@
              orNumber: '',
              remarks: '',
              isSubmitting: false,
+             familySubmitting: false,
              openPreview(url, title, isPdf) {
                  this.preview = true;
                  this.src = url;

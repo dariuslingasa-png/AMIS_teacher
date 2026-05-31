@@ -73,14 +73,72 @@ class AdminPaymentController extends Controller
     public function index(Request $request)
     {
         $query = Payment::with('applicant.user')->latest();
+        $search = trim((string) $request->input('search', ''));
+        $sort = (string) $request->input('sort', 'updated');
+        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
         $familyRows = $this->paymentFamilyRows($query->get());
+
+        if ($search !== '') {
+            $needle = mb_strtolower($search);
+            $familyRows = $familyRows->filter(function ($family) use ($needle) {
+                $childrenText = $family['children']
+                    ->map(fn ($child) => collect([
+                        $child->full_name,
+                        $child->first_name,
+                        $child->last_name,
+                        $child->grade_level,
+                        $child->school_year,
+                        $child->user?->email,
+                    ])->filter()->join(' '))
+                    ->join(' ');
+
+                $paymentsText = $family['payments']
+                    ->map(fn ($payment) => collect([
+                        $payment->reference_no,
+                        $payment->or_number,
+                        $payment->method,
+                        $payment->status,
+                    ])->filter()->join(' '))
+                    ->join(' ');
+
+                $haystack = mb_strtolower(collect([
+                    $family['family_label'],
+                    $family['family_no'],
+                    $family['methods']->join(' '),
+                    $childrenText,
+                    $paymentsText,
+                ])->filter()->join(' '));
+
+                return str_contains($haystack, $needle);
+            })->values();
+        }
+
+        $familyRows = (match ($sort) {
+            'family' => $familyRows->sortBy(fn ($row) => $row['family_label'], SORT_NATURAL | SORT_FLAG_CASE, $direction === 'desc'),
+            'children' => $familyRows->sortBy(fn ($row) => $row['children']->count(), SORT_REGULAR, $direction === 'desc'),
+            'amount' => $familyRows->sortBy(fn ($row) => (float) $row['amount'], SORT_REGULAR, $direction === 'desc'),
+            'method' => $familyRows->sortBy(fn ($row) => $row['methods']->first() ?? '', SORT_NATURAL | SORT_FLAG_CASE, $direction === 'desc'),
+            'status' => $familyRows->sortBy(fn ($row) => $row['status'], SORT_NATURAL | SORT_FLAG_CASE, $direction === 'desc'),
+            default => $familyRows->sortBy(fn ($row) => optional($row['updated_at'])->timestamp ?? 0, SORT_REGULAR, $direction === 'desc'),
+        })->values();
+
+        $paymentSummary = [
+            'families' => $familyRows->count(),
+            'children' => $familyRows->sum(fn ($row) => $row['children']->count()),
+            'amount' => $familyRows->sum(fn ($row) => (float) $row['amount']),
+            'pending' => $familyRows->where('status', 'pending')->count(),
+            'verified' => $familyRows->where('status', 'verified')->count(),
+            'rejected' => $familyRows->where('status', 'rejected')->count(),
+        ];
+
         $page = max((int) $request->input('page', 1), 1);
-        $perPage = 20;
+        $perPage = (int) $request->input('per_page', 15);
+        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
 
         $paymentFamilies = new LengthAwarePaginator(
             $familyRows->forPage($page, $perPage)->values(),
@@ -93,7 +151,7 @@ class AdminPaymentController extends Controller
             ]
         );
 
-        return view('admin.payments.index', compact('paymentFamilies'));
+        return view('admin.payments.index', compact('paymentFamilies', 'paymentSummary', 'sort', 'direction', 'perPage'));
     }
 
     /**

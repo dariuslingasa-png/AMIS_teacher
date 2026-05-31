@@ -26,6 +26,7 @@
         @php
             $hasVerifiedPayment = $allPayments->filter(fn($p) => strtolower($p->status) === 'verified')->isNotEmpty();
             $unapprovedCount = $invoiceChildren->filter(fn($c) => strtolower($c->status) !== 'approved')->count();
+            $onboardingMaintenance = true;
         @endphp
 
         @if ($hasVerifiedPayment)
@@ -53,14 +54,28 @@
                                 </span>
                             </div>
                         @endif
+                        @if ($unapprovedCount > 0 && $onboardingMaintenance)
+                            <div class="mt-4 inline-flex max-w-full items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 shadow-sm">
+                                <i data-lucide="construction" class="mt-0.5 h-5 w-5 shrink-0 text-amber-600"></i>
+                                <div>
+                                    <div class="text-xs font-black uppercase tracking-wider">Onboarding Maintenance</div>
+                                    <div class="mt-1 text-sm font-semibold">Disabled button due to maintenance sa onboarding.</div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
                         @if ($unapprovedCount > 0)
-                            <form method="POST" action="{{ route('admin.applicants.approve-family', $applicant) }}">
+                            <form method="POST" action="{{ route('admin.applicants.approve-family', $applicant) }}" @submit="isSubmitting = true; familySubmitting = true">
                                 @csrf
-                                <button type="submit" class="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-emerald-700/10 hover:bg-emerald-750 transition active:scale-[0.98] cursor-pointer">
-                                    <i data-lucide="check-circle" class="h-4.5 w-4.5 text-emerald-200"></i>
-                                    Approve Family Onboarding
+                                <button type="submit" disabled :disabled="true" class="inline-flex min-w-[245px] items-center justify-center gap-2 rounded-2xl bg-slate-300 px-6 py-3.5 text-sm font-black uppercase tracking-wider text-slate-600 shadow-lg shadow-slate-700/5 disabled:cursor-not-allowed disabled:opacity-80">
+                                    <i x-show="!familySubmitting" data-lucide="check-circle" class="h-4.5 w-4.5 text-slate-500"></i>
+                                    <svg x-show="familySubmitting" class="h-4.5 w-4.5 animate-spin text-emerald-100" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span x-show="!familySubmitting">Onboarding Disabled</span>
+                                    <span x-show="familySubmitting">Onboarding Family...</span>
                                 </button>
                             </form>
                         @else
