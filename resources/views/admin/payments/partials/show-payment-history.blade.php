@@ -1,4 +1,4 @@
-        <div class="print:hidden max-w-3xl mx-auto bg-white p-8 border border-slate-200 rounded-3xl shadow-sm space-y-6 mt-6">
+        <div class="print:hidden bg-white p-8 border border-slate-200 rounded-3xl shadow-sm space-y-6 mt-6">
             
             <!-- Ledger Title -->
             <div class="mb-4 flex items-center justify-between">
