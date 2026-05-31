@@ -7,13 +7,17 @@ use App\Models\AdminAuditLog;
 use App\Models\EnrollmentApplicant;
 use App\Models\StudentAccount;
 use App\Models\StudentAccountPayment;
-use App\Services\Admin\Enrollment\EnrollmentApprovalService;
-use Carbon\Carbon;
+use App\Http\Controllers\Traits\PaymentHelperTrait;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class AdminPaymentController extends Controller
 {
+    use PaymentHelperTrait;
+
+    /**
+     * Display the Finance Dashboard statistics and charts.
+     */
     public function dashboard()
     {
         $stats = [
@@ -52,9 +56,20 @@ class AdminPaymentController extends Controller
 
         $financeCharts = $this->financeCharts($stats);
 
-        return view('admin.payments.dashboard', compact('stats', 'financeCharts', 'recentPayments', 'recentSoaPayments', 'openAccounts', 'familyChildrenByPayment', 'familyLabelsByPayment'));
+        return view('admin.payments.dashboard', compact(
+            'stats',
+            'financeCharts',
+            'recentPayments',
+            'recentSoaPayments',
+            'openAccounts',
+            'familyChildrenByPayment',
+            'familyLabelsByPayment'
+        ));
     }
 
+    /**
+     * Display the list of parent enrollment payments grouped by family batch.
+     */
     public function index(Request $request)
     {
         $query = Payment::with('applicant.user')->latest();
@@ -81,12 +96,16 @@ class AdminPaymentController extends Controller
         return view('admin.payments.index', compact('paymentFamilies'));
     }
 
+    /**
+     * Display details and invoice review worksheet for a specific enrollment payment.
+     */
     public function show(Payment $payment)
     {
         $payment->load('applicant.user');
         $applicant = $payment->applicant;
         $familyChildren = collect();
         $familyLabel = 'FAMILY';
+        $invoice = null;
 
         if ($applicant) {
             $familyChildren = EnrollmentApplicant::with('payment')
@@ -100,12 +119,22 @@ class AdminPaymentController extends Controller
                 ->orderBy('id')
                 ->get();
             $familyLabel = $this->familyLabel($familyChildren, $applicant);
+
+            // Fetch or lazily auto-generate the single family Invoice record!
+            $invoice = \App\Models\Invoice::getOrCreateForFamily($applicant);
+            if (!$payment->invoice_id) {
+                $payment->update(['invoice_id' => $invoice->id]);
+            }
+            // Trigger auto-recalculation to retrospectively convert old ORs in DB!
+            $invoice->recalculate();
         }
 
-        return view('admin.payments.show', compact('payment', 'applicant', 'familyChildren', 'familyLabel'));
+        return view('admin.payments.show', compact('payment', 'applicant', 'familyChildren', 'familyLabel', 'invoice'));
     }
 
-
+    /**
+     * Verify and approve a parent's enrollment payment proof.
+     */
     public function verify(Request $request, Payment $payment)
     {
         $this->ensurePaymentReviewer();
@@ -114,9 +143,31 @@ class AdminPaymentController extends Controller
             return back()->withErrors(['status' => 'Cannot verify: payment proof is missing.']);
         }
 
+        $invoice = \App\Models\Invoice::getOrCreateForFamily($payment->applicant);
+        if (!$payment->invoice_id) {
+            $payment->invoice_id = $invoice->id;
+        }
+
         $orNumber = $request->input('or_number');
         if (blank($orNumber)) {
-            $orNumber = '7010' . rand(1000, 9999);
+            // Count verified payments already existing under this invoice
+            $verifiedCount = $invoice->payments()->where('status', 'verified')->count();
+            
+            // Suffix the invoice number directly: e.g. INV-000204 -> OR-000204
+            $baseOr = str_replace('INV-', 'OR-', $invoice->invoice_no);
+            
+            if ($verifiedCount === 0) {
+                // First payment! Check if this payment is a full payment or partial payment.
+                $isFullPayment = ((float)$payment->amount >= (float)$invoice->total_amount);
+                if ($isFullPayment) {
+                    $orNumber = $baseOr;
+                } else {
+                    $orNumber = $baseOr . '-1';
+                }
+            } else {
+                // This is a subsequent installment payment!
+                $orNumber = $baseOr . '-' . ($verifiedCount + 1);
+            }
         }
 
         $payment->update([
@@ -125,6 +176,9 @@ class AdminPaymentController extends Controller
             'verified_at' => now(),
         ]);
 
+        // Sync and recalculate the single Family Invoice totals & status!
+        $invoice->recalculate();
+
         AdminAuditLog::record('payment_approved', true, 'Payment proof approved.', [
             'payment_id' => $payment->id,
             'applicant_id' => $payment->enrollment_applicant_id,
@@ -132,43 +186,19 @@ class AdminPaymentController extends Controller
             'method' => $payment->method,
         ]);
 
-        $approvalMessage = null;
         $payment->loadMissing('applicant.student');
 
-        if ($payment->applicant) {
-            $payment->applicant->setRelation('payment', $payment);
-            
-            $applicant = $payment->applicant;
-            $familyChildren = collect();
-            if ($applicant->family_application_id) {
-                $familyChildren = EnrollmentApplicant::where('family_application_id', $applicant->family_application_id)->get();
-            } else {
-                $familyChildren = EnrollmentApplicant::where('user_id', $applicant->user_id)->get();
-            }
-
-            $approvedNames = [];
-            foreach ($familyChildren as $sibling) {
-                if ($sibling->status !== 'approved' && in_array($sibling->status, ['submitted', 'under_review', 'pending', 'ready_for_submission'], true)) {
-                    $sibling->setRelation('payment', $payment);
-                    try {
-                        app(EnrollmentApprovalService::class)->approve($sibling);
-                        $approvedNames[] = trim($sibling->first_name . ' ' . $sibling->last_name);
-                    } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::error("Failed to auto-approve sibling {$sibling->id}: " . $e->getMessage());
-                    }
-                }
-            }
-
-            if (count($approvedNames) > 0) {
-                $approvalMessage = "Payment verified successfully. Auto-approved: " . implode(', ', $approvedNames) . ".";
-            } else if ($payment->applicant->status === 'approved') {
-                $approvalMessage = 'Payment verified. Student already onboarded.';
-            }
+        $approvalMessage = 'Payment verified successfully.';
+        if ($payment->applicant && $payment->applicant->status === 'approved') {
+            $approvalMessage = 'Payment verified. Student already onboarded.';
         }
 
-        return back()->with('success', $approvalMessage ?: 'Payment verified successfully.');
+        return back()->with('success', $approvalMessage);
     }
 
+    /**
+     * Reject a parent's enrollment payment proof with custom remarks.
+     */
     public function reject(Request $request, Payment $payment)
     {
         $this->ensurePaymentReviewer();
@@ -179,6 +209,15 @@ class AdminPaymentController extends Controller
             'status'  => 'rejected',
             'remarks' => $request->remarks,
         ]);
+
+        // Sync and recalculate the single Family Invoice totals & status!
+        if ($payment->invoice_id) {
+            $payment->invoice->recalculate();
+        } else {
+            $invoice = \App\Models\Invoice::getOrCreateForFamily($payment->applicant);
+            $payment->update(['invoice_id' => $invoice->id]);
+            $invoice->recalculate();
+        }
 
         $payment->loadMissing('applicant');
         $payment->applicant?->update([
@@ -195,228 +234,19 @@ class AdminPaymentController extends Controller
         return back()->with('success', 'Payment rejected.');
     }
 
+    /**
+     * Abort if the user doesn't have finance administrative reviewer clearance.
+     */
     private function ensurePaymentReviewer(): void
     {
         abort_unless(auth()->user()?->canReviewEnrollmentPayments(), 403);
     }
 
-    private function financeCharts(array $stats): array
+    /**
+     * Display discount and fee settings management view.
+     */
+    public function fees()
     {
-        $startDate = Carbon::today()->subDays(6);
-        $labels = collect(range(0, 6))
-            ->map(fn ($day) => $startDate->copy()->addDays($day)->format('M d'))
-            ->values();
-
-        $enrollmentPayments = Payment::whereNotNull('receipt_url')
-            ->where('created_at', '>=', $startDate->copy()->startOfDay())
-            ->get(['amount', 'created_at'])
-            ->groupBy(fn ($payment) => $payment->created_at?->format('M d'));
-
-        $soaPayments = StudentAccountPayment::where('created_at', '>=', $startDate->copy()->startOfDay())
-            ->get(['amount', 'created_at'])
-            ->groupBy(fn ($payment) => $payment->created_at?->format('M d'));
-
-        return [
-            'paymentStatus' => [
-                'labels' => ['Pending Proofs', 'Approved', 'Rejected', 'Missing Proof'],
-                'data' => [
-                    (int) $stats['pending'],
-                    (int) $stats['verified'],
-                    (int) $stats['rejected'],
-                    (int) $stats['missing'],
-                ],
-            ],
-            'soaStatus' => [
-                'labels' => ['Paid', 'Partial', 'Unpaid'],
-                'data' => [
-                    StudentAccount::where('status', 'paid')->count(),
-                    (int) $stats['soa_partial'],
-                    (int) $stats['soa_unpaid'],
-                ],
-            ],
-            'collectionTrend' => [
-                'labels' => $labels,
-                'enrollment' => $labels
-                    ->map(fn ($label) => (float) ($enrollmentPayments->get($label, collect())->sum('amount')))
-                    ->values(),
-                'soa' => $labels
-                    ->map(fn ($label) => (float) ($soaPayments->get($label, collect())->sum('amount')))
-                    ->values(),
-            ],
-            'soaMoney' => [
-                'labels' => ['SOA Paid', 'SOA Balance'],
-                'data' => [
-                    (float) $stats['soa_paid'],
-                    (float) $stats['soa_balance'],
-                ],
-            ],
-        ];
-    }
-
-    private function familyChildrenByPayment($payments): array
-    {
-        $applicants = $payments->pluck('applicant')->filter();
-
-        if ($applicants->isEmpty()) {
-            return [];
-        }
-
-        $familyIds = $applicants
-            ->pluck('family_application_id')
-            ->filter()
-            ->unique()
-            ->values();
-
-        $userIds = $applicants
-            ->filter(fn ($applicant) => blank($applicant->family_application_id) && filled($applicant->user_id))
-            ->pluck('user_id')
-            ->unique()
-            ->values();
-
-        if ($familyIds->isEmpty() && $userIds->isEmpty()) {
-            return $payments->mapWithKeys(fn ($payment) => [
-                $payment->id => collect([$payment->applicant])->filter(),
-            ])->all();
-        }
-
-        $children = EnrollmentApplicant::with('payment')
-            ->where(function ($query) use ($familyIds, $userIds) {
-                if ($familyIds->isNotEmpty()) {
-                    $query->whereIn('family_application_id', $familyIds);
-                }
-
-                if ($userIds->isNotEmpty()) {
-                    $method = $familyIds->isNotEmpty() ? 'orWhereIn' : 'whereIn';
-                    $query->{$method}('user_id', $userIds);
-                }
-            })
-            ->orderBy('id')
-            ->get()
-            ->groupBy(fn ($child) => $child->family_application_id ? 'family:'.$child->family_application_id : 'user:'.$child->user_id);
-
-        return $payments->mapWithKeys(function ($payment) use ($children) {
-            $applicant = $payment->applicant;
-
-            if (!$applicant) {
-                return [$payment->id => collect()];
-            }
-
-            $key = $applicant->family_application_id ? 'family:'.$applicant->family_application_id : 'user:'.$applicant->user_id;
-
-            return [$payment->id => $children->get($key, collect([$applicant]))];
-        })->all();
-    }
-
-    private function familyLabelsByPayment($payments, array $familyChildrenByPayment): array
-    {
-        return $payments->mapWithKeys(function ($payment) use ($familyChildrenByPayment) {
-            $children = $familyChildrenByPayment[$payment->id] ?? collect([$payment->applicant])->filter();
-
-            return [$payment->id => $this->familyLabel($children, $payment->applicant)];
-        })->all();
-    }
-
-    private function paymentFamilyRows($payments)
-    {
-        $familyChildrenByPayment = $this->familyChildrenByPayment($payments);
-
-        return $payments
-            ->filter(fn ($payment) => $payment->applicant)
-            ->groupBy(fn ($payment) => $this->paymentFamilyKey($payment))
-            ->map(function ($familyPayments) use ($familyChildrenByPayment) {
-                $representative = $familyPayments
-                    ->sortByDesc(fn ($payment) => optional($payment->updated_at)->timestamp ?? 0)
-                    ->first();
-                $applicant = $representative->applicant;
-                $children = $familyChildrenByPayment[$representative->id] ?? collect([$applicant])->filter();
-                $paymentsForTotal = $children
-                    ->pluck('payment')
-                    ->filter(fn ($payment) => $payment && filled($payment->receipt_url));
-                $paymentsForStatus = $paymentsForTotal->isNotEmpty() ? $paymentsForTotal : $familyPayments;
-                $statuses = $paymentsForStatus
-                    ->pluck('status')
-                    ->map(fn ($status) => strtolower((string) ($status ?: 'pending')))
-                    ->filter()
-                    ->values();
-
-                return [
-                    'key' => $this->paymentFamilyKey($representative),
-                    'payment' => $representative,
-                    'payments' => $familyPayments->values(),
-                    'children' => $children,
-                    'family_no' => $applicant?->family_application_id ?: $applicant?->id,
-                    'family_label' => $this->familyLabel($children, $applicant),
-                    'amount' => $paymentsForTotal->isNotEmpty()
-                        ? $paymentsForTotal->sum(fn ($payment) => (float) ($payment->amount ?? 0))
-                        : $familyPayments->sum(fn ($payment) => (float) ($payment->amount ?? 0)),
-                    'methods' => $paymentsForStatus
-                        ->pluck('method')
-                        ->filter()
-                        ->map(fn ($method) => strtoupper((string) $method))
-                        ->unique()
-                        ->values(),
-                    'status' => $this->familyPaymentStatus($statuses),
-                    'updated_at' => $paymentsForStatus
-                        ->sortByDesc(fn ($payment) => optional($payment->updated_at)->timestamp ?? 0)
-                        ->first()?->updated_at,
-                ];
-            })
-            ->sortByDesc(fn ($row) => optional($row['updated_at'])->timestamp ?? 0)
-            ->values();
-    }
-
-    private function paymentFamilyKey(Payment $payment): string
-    {
-        $applicant = $payment->applicant;
-
-        if (!$applicant) {
-            return 'payment:'.$payment->id;
-        }
-
-        if (filled($applicant->family_application_id)) {
-            return 'family:'.$applicant->family_application_id;
-        }
-
-        return filled($applicant->user_id) ? 'user:'.$applicant->user_id : 'applicant:'.$applicant->id;
-    }
-
-    private function familyPaymentStatus($statuses): string
-    {
-        if ($statuses->isEmpty()) {
-            return 'pending';
-        }
-
-        if ($statuses->contains('rejected')) {
-            return 'rejected';
-        }
-
-        if ($statuses->every(fn ($status) => $status === 'verified')) {
-            return 'verified';
-        }
-
-        return 'pending';
-    }
-
-    private function familyLabel($children, ?EnrollmentApplicant $fallback = null): string
-    {
-        $representative = $children->first() ?: $fallback;
-
-        if (!$representative) {
-            return 'FAMILY';
-        }
-
-        $lastName = $representative->father_last_name
-            ?: $representative->mother_last_name
-            ?: $representative->last_name;
-
-        $firstName = $representative->father_first_name
-            ?: $representative->mother_first_name
-            ?: $representative->emergency_name
-            ?: $representative->user?->name
-            ?: $representative->first_name;
-
-        $labelName = trim($lastName.' '.$firstName);
-
-        return 'FAMILY OF '.strtoupper($labelName ?: $representative->full_name ?: 'GUARDIAN');
+        return view('admin.payments.fees');
     }
 }

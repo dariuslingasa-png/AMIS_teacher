@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Student;
+use App\Http\Controllers\Traits\PaymentHelperTrait;
 use App\Models\StudentAccount;
 use App\Models\StudentAccountPayment;
 use Illuminate\Http\Request;
 
 class AdminSoaController extends Controller
 {
+    use PaymentHelperTrait;
+
     public function index(Request $request)
     {
         $query = StudentAccount::with('student.applicant')->latest();
@@ -30,15 +32,77 @@ class AdminSoaController extends Controller
             );
         }
 
-        $accounts = $query->paginate(20);
+        $accounts = $query->get();
 
-        return view('admin.soa.index', compact('accounts'));
+        // Group accounts by family robustly
+        $familyRows = $accounts->groupBy(function ($account) {
+            $applicant = $account->applicant;
+            if (!$applicant) {
+                return 'single:' . $account->id;
+            }
+            if ($applicant->family_application_id) {
+                return 'family:' . $applicant->family_application_id;
+            }
+            return 'user:' . $applicant->user_id;
+        })->map(function ($familyAccounts, $key) {
+            $first = $familyAccounts->first();
+            $applicant = $first->applicant;
+
+            // Sort sibling accounts
+            $children = $familyAccounts->sortBy('id');
+
+            // Sum totals
+            $totalAmount = $children->sum(fn($a) => (float) ($a->total_balance ?? 0));
+            $paidAmount = $children->sum(fn($a) => (float) ($a->amount_paid ?? 0));
+            $remainingBalance = $children->sum(fn($a) => (float) ($a->remaining_balance ?? 0));
+
+            $familyLabel = $this->familyLabel($children->map(fn($a) => $a->applicant)->filter(), $applicant);
+            $familyNo = $applicant?->family_application_id ?: $applicant?->id;
+
+            return [
+                'key' => $key,
+                'family_no' => $familyNo,
+                'family_label' => $familyLabel,
+                'accounts' => $children,
+                'total_amount' => $totalAmount,
+                'amount_paid' => $paidAmount,
+                'remaining_balance' => $remainingBalance,
+                'status' => $remainingBalance <= 0 ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid'),
+            ];
+        })->values();
+
+        // Chronologically order families with active balances first
+        $familyRows = $familyRows->sortByDesc(fn($f) => $f['remaining_balance'])->values();
+
+        $page = max((int) $request->input('page', 1), 1);
+        $perPage = 15;
+
+        $groupedFamilies = new \Illuminate\Pagination\LengthAwarePaginator(
+            $familyRows->forPage($page, $perPage)->values(),
+            $familyRows->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
+
+        return view('admin.soa.index', compact('groupedFamilies'));
     }
 
     public function show(StudentAccount $account)
     {
         $account->load('student.applicant.payment', 'monthlyBillings', 'payments');
-        return view('admin.soa.show', compact('account'));
+
+        $studentName = $account->student?->applicant?->full_name ?: ($account->applicant?->full_name ?: 'Student');
+
+        $breadcrumbs = [
+            ['label' => 'Soa', 'href' => route('admin.soa.index')],
+            ['label' => $studentName, 'href' => null],
+        ];
+
+        return view('admin.soa.show', compact('account', 'breadcrumbs'));
     }
 
     public function verifyPayment(StudentAccountPayment $payment)
@@ -69,7 +133,7 @@ class AdminSoaController extends Controller
             'amount'                 => 'required|numeric|min:1|max:' . $account->remaining_balance,
             'method'                 => 'required|in:cash,gcash,maya,bdo',
             'reference_no'           => 'nullable|string|max:100',
-            'or_number'              => 'nullable|string|max:100',
+            'or_number'              => 'required|string|max:100',
             'purpose'                => 'nullable|string|max:100',
             'checked_by'             => 'nullable|string|max:100',
             'account_received'       => 'nullable|string|max:100',
@@ -82,13 +146,13 @@ class AdminSoaController extends Controller
             $receiptPath = $request->file('receipt')->store('receipts/soa/' . $account->student_id, 'public');
         }
 
-        $payment = \App\Models\StudentAccountPayment::create([
+        \App\Models\StudentAccountPayment::create([
             'student_account_id'     => $account->id,
             'student_id'             => $account->student_id,
             'soa_monthly_billing_id' => $request->soa_monthly_billing_id,
             'method'                 => $request->method,
             'reference_no'           => $request->reference_no,
-            'or_number'              => $request->or_number ?: ('7010' . rand(1000, 9999)),
+            'or_number'              => $request->or_number,
             'checked_by'             => $request->checked_by,
             'account_received'       => $request->account_received,
             'amount'                 => $request->amount,

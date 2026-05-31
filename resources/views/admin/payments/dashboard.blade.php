@@ -16,7 +16,11 @@
                 <div class="flex flex-wrap gap-3">
                     <a href="{{ route('admin.payments.index') }}" class="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-amber-700 shadow-lg shadow-amber-900/20 transition hover:bg-amber-50">
                         <i data-lucide="credit-card" class="h-4 w-4"></i>
-                        Enrollment Payment Review
+                        Enrollment Payment Approval
+                    </a>
+                    <a href="{{ route('admin.finance.fees') }}" class="inline-flex items-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white transition hover:bg-white/15">
+                        <i data-lucide="table" class="h-4 w-4"></i>
+                        Schedule of Fees
                     </a>
                     <a href="{{ route('admin.soa.index') }}" class="inline-flex items-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white transition hover:bg-white/15">
                         <i data-lucide="scroll-text" class="h-4 w-4"></i>
@@ -48,11 +52,11 @@
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <span class="text-xs font-black uppercase tracking-wider text-slate-400">SOA Balance</span>
-                <p class="mt-2 text-2xl font-black text-slate-950">PHP {{ number_format((float) $stats['soa_balance'], 2) }}</p>
+                <p class="mt-2 text-2xl font-black text-slate-950">{{ number_format((float) $stats['soa_balance'], 2) }}</p>
             </div>
             <div class="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm">
                 <span class="text-xs font-black uppercase tracking-wider text-slate-400">SOA Paid</span>
-                <p class="mt-2 text-2xl font-black text-emerald-700">PHP {{ number_format((float) $stats['soa_paid'], 2) }}</p>
+                <p class="mt-2 text-2xl font-black text-emerald-700">{{ number_format((float) $stats['soa_paid'], 2) }}</p>
             </div>
             <div class="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm">
                 <span class="text-xs font-black uppercase tracking-wider text-slate-400">Partial Accounts</span>
@@ -102,7 +106,7 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td class="px-3 py-4 font-semibold text-slate-700">{{ isset($payment->amount) ? 'PHP '.number_format((float) $payment->amount, 2) : '-' }}</td>
+                                <td class="px-3 py-4 font-semibold text-slate-700">{{ isset($payment->amount) ? number_format((float) $payment->amount, 2) : '-' }}</td>
                                 <td class="px-3 py-4 font-semibold text-slate-700">{{ $payment->method_label ?? $payment->method ?? '-' }}</td>
                                 <td class="px-3 py-4"><x-badge color="{{ ($payment->status ?? '') === 'verified' ? 'green' : (($payment->status ?? '') === 'rejected' ? 'red' : 'yellow') }}">{{ Str::upper($payment->status ?? 'pending') }}</x-badge></td>
                                 <td class="px-3 py-4 text-right">
@@ -126,7 +130,7 @@
                                 <span class="mt-1 block text-xs font-semibold uppercase text-slate-500">{{ $account->grade_level ?? $account->student?->grade_level ?? '-' }} &middot; {{ $account->school_year ?? '-' }}</span>
                             </span>
                             <span class="text-right">
-                                <span class="block text-sm font-black text-amber-700">PHP {{ number_format((float) $account->remaining_balance, 2) }}</span>
+                                <span class="block text-sm font-black text-amber-700">{{ number_format((float) $account->remaining_balance, 2) }}</span>
                                 <span class="mt-1 block text-[10px] font-black uppercase tracking-wider text-slate-400">{{ $account->status ?? 'unpaid' }}</span>
                             </span>
                         </a>
@@ -153,7 +157,7 @@
                         @forelse ($recentSoaPayments as $payment)
                             <tr>
                                 <td class="px-3 py-4 font-black text-slate-950">{{ $payment->student?->applicant?->full_name ?: 'Student' }}</td>
-                                <td class="px-3 py-4 font-semibold text-slate-700">PHP {{ number_format((float) $payment->amount, 2) }}</td>
+                                <td class="px-3 py-4 font-semibold text-slate-700">{{ number_format((float) $payment->amount, 2) }}</td>
                                 <td class="px-3 py-4 font-semibold text-slate-700">{{ Str::upper($payment->method ?? '-') }}</td>
                                 <td class="px-3 py-4"><x-badge color="{{ ($payment->status ?? '') === 'verified' ? 'green' : (($payment->status ?? '') === 'rejected' ? 'red' : 'yellow') }}">{{ Str::upper($payment->status ?? 'pending') }}</x-badge></td>
                                 <td class="px-3 py-4 text-sm font-semibold text-slate-500">{{ optional($payment->paid_at ?? $payment->created_at)->format('M d, Y h:i A') }}</td>

@@ -60,6 +60,7 @@ Route::name('admin.')->group(function () {
             Route::patch('/{applicant}/document', [RequirementController::class, 'update'])->name('document');
             Route::patch('/{applicant}/discount', [ApplicantController::class, 'updateDiscount'])->name('discount');
             Route::post('/{applicant}/approve', [ApprovalController::class, 'approve'])->name('approve');
+            Route::post('/{applicant}/approve-family', [ApprovalController::class, 'approveFamily'])->name('approve-family');
         });
 
         Route::get('/students', [AdminStudentController::class, 'index'])->name('students.index');
@@ -77,6 +78,7 @@ Route::name('admin.')->group(function () {
 
         Route::get('/payments', [AdminPaymentController::class, 'index'])->name('payments.index');
         Route::get('/finance', [AdminPaymentController::class, 'dashboard'])->name('finance.dashboard');
+        Route::get('/finance/fees', [AdminPaymentController::class, 'fees'])->name('finance.fees');
         Route::get('/payments/{payment}', [AdminPaymentController::class, 'show'])->name('payments.show');
         Route::patch('/payments/{payment}/verify', [AdminPaymentController::class, 'verify'])->name('payments.verify');
         Route::patch('/payments/{payment}/reject', [AdminPaymentController::class, 'reject'])->name('payments.reject');

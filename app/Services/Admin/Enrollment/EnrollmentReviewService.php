@@ -66,6 +66,16 @@ class EnrollmentReviewService
     {
         $docStatuses = $applicant->document_statuses ?? [];
         $payment = $applicant->payment;
+        if (!$payment) {
+            $familyId = $applicant->family_application_id ?: $applicant->id;
+            $payment = \App\Models\Payment::whereHas('applicant', function ($query) use ($familyId) {
+                $query->where(function ($q) use ($familyId) {
+                    $q->where('family_application_id', $familyId)
+                      ->orWhere('id', $familyId);
+                });
+            })
+            ->first();
+        }
         $hasPaymentProof = $payment && filled($payment->receipt_url);
         $paymentOk = $hasPaymentProof && $payment->status === 'verified';
         $allDocsOk = $this->areAllDocumentsApproved($applicant);
@@ -258,30 +268,68 @@ class EnrollmentReviewService
 
         $discountAmount = min((float) $account->tuition_fee, (float) $applicant->discount_amount);
         $discountedTuition = max(0, (float) $account->tuition_fee - $discountAmount);
-        $monthlyTuition = round($discountedTuition / 10, 2);
-        $gross = $discountedTuition + (float) $account->miscellaneous_fee + (float) $account->books_fee;
-        $totalBalance = max(0, $gross - (float) $account->enrollment_fee_paid);
-        $paid = $account->payments()->where('status', 'verified')->sum('amount');
-        $remaining = max(0, $totalBalance - $paid);
+        
+        $billingMonthsCount = $account->monthlyBillings()->count() ?: 9;
 
-        $account->update([
-            'sibling_order' => $applicant->sibling_order,
-            'discount_type' => $applicant->discount_type,
-            'discount_percentage' => $applicant->discount_percentage,
-            'discount_amount' => $discountAmount,
-            'monthly_tuition' => $monthlyTuition,
-            'gross_total' => $gross,
-            'total_balance' => $totalBalance,
-            'remaining_balance' => $remaining,
-            'status' => $remaining <= 0 ? 'paid' : ($paid > 0 ? 'partial' : 'unpaid'),
-        ]);
+        if ($billingMonthsCount === 10) {
+            // Old 10-month system logic
+            $monthlyTuition = round($discountedTuition / 10, 2);
+            $gross = $discountedTuition + (float) $account->miscellaneous_fee + (float) $account->books_fee;
+            $totalBalance = max(0, $gross - (float) $account->enrollment_fee_paid);
+            $paid = $account->payments()->where('status', 'verified')->sum('amount');
+            $remaining = max(0, $totalBalance - $paid);
 
-        foreach ($account->monthlyBillings()->where('status', 'unpaid')->get() as $billing) {
-            $billing->update([
-                'amount_due' => $billing->month_number === 1
-                    ? $monthlyTuition + (float) $account->miscellaneous_fee + (float) $account->books_fee
-                    : $monthlyTuition,
+            $account->update([
+                'sibling_order' => $applicant->sibling_order,
+                'discount_type' => $applicant->discount_type,
+                'discount_percentage' => $applicant->discount_percentage,
+                'discount_amount' => $discountAmount,
+                'monthly_tuition' => $monthlyTuition,
+                'gross_total' => $gross,
+                'total_balance' => $totalBalance,
+                'remaining_balance' => $remaining,
+                'status' => $remaining <= 0 ? 'paid' : ($paid > 0 ? 'partial' : 'unpaid'),
             ]);
+
+            foreach ($account->monthlyBillings()->where('status', 'unpaid')->get() as $billing) {
+                $billing->update([
+                    'amount_due' => $billing->month_number === 1
+                        ? $monthlyTuition + (float) $account->miscellaneous_fee + (float) $account->books_fee
+                        : $monthlyTuition,
+                ]);
+            }
+        } else {
+            // New 9-month system logic
+            $gross = $discountedTuition + (float) $account->miscellaneous_fee + (float) $account->books_fee;
+            
+            // Total balance under 9-month system is the GROSS total
+            $totalBalance = $gross;
+            
+            // Recalculate remaining balance
+            $paid = $account->payments()->where('status', 'verified')->sum('amount');
+            $remaining = max(0, $totalBalance - $paid);
+            
+            // Monthly tuition is (gross - enrollment_fee_paid) / 9
+            $monthlyTuition = round(($gross - (float) $account->enrollment_fee_paid) / 9, 2);
+
+            $account->update([
+                'sibling_order' => $applicant->sibling_order,
+                'discount_type' => $applicant->discount_type,
+                'discount_percentage' => $applicant->discount_percentage,
+                'discount_amount' => $discountAmount,
+                'monthly_tuition' => $monthlyTuition,
+                'gross_total' => $gross,
+                'total_balance' => $totalBalance,
+                'remaining_balance' => $remaining,
+                'status' => $remaining <= 0 ? 'paid' : ($paid > 0 ? 'partial' : 'unpaid'),
+            ]);
+
+            // For 9-month system, all unpaid billings have the same uniform monthlyTuition
+            foreach ($account->monthlyBillings()->where('status', 'unpaid')->get() as $billing) {
+                $billing->update([
+                    'amount_due' => $monthlyTuition,
+                ]);
+            }
         }
     }
 }

@@ -66,7 +66,8 @@ class StudentAccount extends Model
 
             // Chronological Waterfall Payment Allocation
             $billings = $this->monthlyBillings()->orderBy('month_number')->get();
-            $tempPaid = $paid;
+            // Exclude the base enrollment fee payment from the monthly billing waterfall allocation, as it is strictly for enrollment downpayment!
+            $tempPaid = max(0.00, $paid - (float) $this->enrollment_fee_paid);
 
             foreach ($billings as $billing) {
                 $due = (float) $billing->amount_due;

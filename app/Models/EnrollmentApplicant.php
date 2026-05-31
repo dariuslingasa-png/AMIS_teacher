@@ -113,6 +113,11 @@ class EnrollmentApplicant extends Model
         return $this->hasOne(Student::class, 'enrollment_applicant_id');
     }
 
+    public function invoice(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Invoice::class, 'family_application_id', 'family_application_id');
+    }
+
     public function getFullNameAttribute(): string
     {
         return trim($this->first_name . ' ' . ($this->middle_name ?? '') . ' ' . $this->last_name);

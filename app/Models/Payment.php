@@ -10,6 +10,7 @@ class Payment extends Model
     protected $fillable = [
         'user_id',
         'enrollment_applicant_id',
+        'invoice_id',
         'method',
         'reference_no',
         'or_number',
@@ -35,6 +36,16 @@ class Payment extends Model
     public function applicant(): BelongsTo
     {
         return $this->belongsTo(EnrollmentApplicant::class, 'enrollment_applicant_id');
+    }
+
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class, 'invoice_id');
+    }
+
+    public function advancePayment(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(AdvancePayment::class, 'source_payment_id');
     }
 
     public function getMethodLabelAttribute(): string

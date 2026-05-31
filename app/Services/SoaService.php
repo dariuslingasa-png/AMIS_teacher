@@ -25,20 +25,71 @@ class SoaService
         $tuition            = (float) $fee->tuition_fee;
         $misc               = (float) $fee->misc_fee;
         $books              = (float) $fee->books_fee;
-        $discountPercentage = (float) ($applicant->discount_percentage ?? 0);
-        $discountAmount     = (float) ($applicant->discount_amount ?? 0);
+        
+        // Find all enrollees in the same family batch to dynamically allocate/split the verified downpayment and apply correct uniform sibling discounts!
+        $familyEnrollees = EnrollmentApplicant::where(function ($query) use ($applicant) {
+            if ($applicant->family_application_id) {
+                $query->where('family_application_id', $applicant->family_application_id);
+            } else {
+                $query->where('user_id', $applicant->user_id);
+            }
+        })
+        ->orderBy('id')
+        ->get();
+        $familyApplicantIds = $familyEnrollees->pluck('id')->all();
 
-        if ($discountPercentage > 0 && $discountAmount <= 0) {
-            $discountAmount = round($tuition * ($discountPercentage / 100), 2);
-            $applicant->update(['discount_amount' => $discountAmount]);
+        // Enforce the uniform school Sibling Discount Policy:
+        // 1 child = 0% Sibling Discount
+        // 2 children = 10% Sibling Discount for BOTH
+        // 3+ children = 15% Sibling Discount for ALL
+        $enrolleeCount = $familyEnrollees->count();
+        if ($enrolleeCount >= 3) {
+            $discountPercentage = 15.0;
+        } elseif ($enrolleeCount === 2) {
+            $discountPercentage = 10.0;
+        } else {
+            $discountPercentage = 0.0;
         }
+
+        $discountAmount = round($tuition * ($discountPercentage / 100), 2);
+        
+        // Sync correct uniform discount details back to the applicant record for consistent UI
+        $applicant->update([
+            'discount_type' => $discountPercentage > 0 ? 'sibling' : null,
+            'discount_percentage' => $discountPercentage,
+            'discount_amount' => $discountAmount,
+        ]);
 
         $discountedTuition = max(0, $tuition - $discountAmount);
         $gross             = $discountedTuition + $misc + $books;
         
-        // Check actual verified payment from applicant enrollment downpayment
-        $enrollPayment = $applicant->payment;
-        $enrollPaid = $enrollPayment && $enrollPayment->status === 'verified' ? (float)$enrollPayment->amount : 4000.00;
+        // Sum total family verified payments
+        $verifiedPayments = \App\Models\Payment::whereIn('enrollment_applicant_id', $familyApplicantIds)
+            ->where('status', 'verified')
+            ->get();
+        $totalVerifiedAmount = (float) $verifiedPayments->sum('amount');
+        
+        $enrollPaid = 0.00;
+        $excessPaid = 0.00;
+        $enrolleeCount = $familyEnrollees->count();
+        
+        if ($totalVerifiedAmount > 0 && $enrolleeCount > 0) {
+            $requiredEnrollmentTotal = 4000.00 * $enrolleeCount;
+            if ($totalVerifiedAmount <= $requiredEnrollmentTotal) {
+                // If payment is less than or equal to required enrollment fee, divide equally per child
+                $enrollPaid = round($totalVerifiedAmount / $enrolleeCount, 2);
+                $excessPaid = 0.00;
+            } else {
+                // If payment is more than required enrollment fee, fully pay enrollment fee first (4k), then divide excess equally
+                $enrollPaid = 4000.00;
+                $excessTotal = $totalVerifiedAmount - $requiredEnrollmentTotal;
+                $excessPaid = round($excessTotal / $enrolleeCount, 2);
+            }
+        } else {
+            // Default draft/unpaid fallback (4k if draft/unapproved estimate, or 0.00 if officially unverified)
+            $enrollPaid = $applicant->status === 'approved' ? 0.00 : 4000.00;
+            $excessPaid = 0.00;
+        }
 
         $account = StudentAccount::create([
             'student_id'              => $student->id,
@@ -61,36 +112,42 @@ class SoaService
             'status'                  => 'unpaid',
         ]);
 
-        // Copy/Create the enrollment fee payment inside student_account_payments
-        if ($enrollPayment && $enrollPayment->status === 'verified') {
+        // Copy/Create the enrollment fee and excess payments inside student_account_payments
+        if ($totalVerifiedAmount > 0) {
+            // Use the first verified payment as representative for Gcash receipt metadata
+            $repPayment = $verifiedPayments->first();
+            
+            // 1. Create Enrollment Fee payment record (up to 4000.00)
             StudentAccountPayment::create([
                 'student_account_id' => $account->id,
                 'student_id'         => $student->id,
-                'method'             => $enrollPayment->method,
-                'reference_no'       => $enrollPayment->reference_no,
-                'or_number'          => $enrollPayment->or_number ?? $enrollPayment->reference_no,
+                'method'             => $repPayment->method,
+                'reference_no'       => $repPayment->reference_no,
+                'or_number'          => $repPayment->or_number ?? $repPayment->reference_no,
                 'checked_by'         => 'System / Finance',
-                'amount'             => $enrollPayment->amount,
+                'amount'             => $enrollPaid, // Allocated paid enrollment downpayment!
                 'status'             => 'verified',
-                'remarks'            => 'Paid Enrollment Fee',
-                'paid_at'            => $enrollPayment->paid_at ?? now(),
-                'verified_at'        => $enrollPayment->verified_at ?? now(),
+                'remarks'            => 'Paid Enrollment Fee (Allocated)',
+                'paid_at'            => $repPayment->paid_at ?? now(),
+                'verified_at'        => $repPayment->verified_at ?? now(),
             ]);
-        } else {
-            // Seed default verified enrollment payment to show in ledger for testing
-            StudentAccountPayment::create([
-                'student_account_id' => $account->id,
-                'student_id'         => $student->id,
-                'method'             => 'gcash',
-                'reference_no'       => 'ENR-' . strtoupper(\Illuminate\Support\Str::random(8)),
-                'or_number'          => '7010' . rand(1000, 9999),
-                'checked_by'         => 'Sir Cabel',
-                'amount'             => $enrollPaid,
-                'status'             => 'verified',
-                'remarks'            => 'Paid Enrollment Fee',
-                'paid_at'            => now(),
-                'verified_at'        => now(),
-            ]);
+
+            // 2. If there is excess, create a separate verified payment record for the additional SOA paid!
+            if ($excessPaid > 0) {
+                StudentAccountPayment::create([
+                    'student_account_id' => $account->id,
+                    'student_id'         => $student->id,
+                    'method'             => $repPayment->method,
+                    'reference_no'       => $repPayment->reference_no,
+                    'or_number'          => ($repPayment->or_number ?? $repPayment->reference_no) . '-EXCESS',
+                    'checked_by'         => 'System / Finance',
+                    'amount'             => $excessPaid, // Additional SOA paid!
+                    'status'             => 'verified',
+                    'remarks'            => 'Paid Additional SOA Paid (Allocated Excess)',
+                    'paid_at'            => $repPayment->paid_at ?? now(),
+                    'verified_at'        => $repPayment->verified_at ?? now(),
+                ]);
+            }
         }
 
         // Recalculate SOA running totals to apply enrollment fee payment

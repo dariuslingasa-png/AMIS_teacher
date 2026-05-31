@@ -34,6 +34,11 @@ class DatabaseSeeder extends Seeder
             'account_status' => 'verified',
             'email_verified_at' => now(),
         ]);
+
+        $this->call([
+            SchoolFeesSeeder::class,
+            WorkflowTestingSeeder::class,
+        ]);
     }
 }
 

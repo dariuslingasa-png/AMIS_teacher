@@ -1,485 +1,128 @@
 @php
-    $studentName = $account->student?->applicant?->full_name ?: 'KHALID TAMING ADJARAIL';
-    $address = $account->student?->applicant?->address ?: 'Makkah, KSA';
-    $email = $account->student?->applicant?->email ?: 'tamingadawiya@yahoo.com';
-    $lrn = $account->student?->applicant?->lrn ?: '459013220043';
+    $studentName = $account->student?->applicant?->full_name ?: ($account->applicant?->full_name ?: 'Student');
+    $address = $account->student?->applicant?->address ?: ($account->applicant?->address ?: 'Bugac Ma-a Road, Davao City');
+    $email = $account->student?->applicant?->email ?: ($account->applicant?->email ?: 'almunawwaraislamicschool@gmail.com');
+    $lrn = $account->student?->applicant?->lrn ?: ($account->applicant?->lrn ?: 'NA');
     $studentId = $account->student?->student_number ?? '260001';
-    $category = $account->student?->applicant?->student_type ?: 'Elementary';
+    $category = $account->student?->applicant?->student_type ?: ($account->applicant?->student_type ?: 'Elementary');
     $grade = $account->grade_level ?? $account->student?->grade_level ?? 'G4';
-    $discountPrivilege = $account->discount_percentage > 0 ? (int)$account->discount_percentage . '%' : '15%';
-    $discountStatus = $account->discount_type ? strtoupper($account->discount_type) : 'Early Enrollment (December 2025)';
+    $discountPrivilege = $account->discount_percentage > 0 ? (int)$account->discount_percentage . '%' : '0%';
+    $discountStatus = $account->discount_type ? strtoupper($account->discount_type) : ($account->discount_percentage > 0 ? 'Active Tuition Discount' : 'No Discount');
 
-    // Math calculations based on official template image
-    $tuition = (float) ($account->tuition_fee ?: 38100.00);
-    $discountAmount = (float) ($account->discount_amount ?: 5715.00);
+    // Math calculations based on database fields
+    $tuition = (float) ($account->tuition_fee ?: 0.00);
+    $discountAmount = (float) ($account->discount_amount ?: 0.00);
     $tuitionNet = $tuition - $discountAmount;
-    $misc = (float) ($account->miscellaneous_fee ?: 1900.00);
-    $booksCharge = (float) ($account->books_fee ?: 5900.00);
+    $misc = (float) ($account->miscellaneous_fee ?: 0.00);
+    $booksCharge = (float) ($account->books_fee ?: 0.00);
 
     $totalFees = $tuition + $misc;
     $finalFees = $tuitionNet + $misc;
 
-    // Ledger balance computation
+    $isApproved = ($account->applicant?->status ?? 'approved') === 'approved';
+
+    // Dynamic enrollment payment allocations
+    $enrollPaid = 0.00;
+    $additionalSoaPaid = 0.00;
+
+    if ($isApproved) {
+        $enrollPaid = (float) ($account->enrollment_fee_paid ?? 0.00);
+        // Find if there is an excess payment in the ledger
+        $excessPayment = $account->payments()
+            ->where('status', 'verified')
+            ->where('remarks', 'like', '%Excess%')
+            ->first();
+        if ($excessPayment) {
+            $additionalSoaPaid = (float) $excessPayment->amount;
+        }
+    } else {
+        // Fallback for draft/pending preview
+        $enrollPaid = 4000.00;
+    }
+    
+    $booksPaid = 0.00;
+
+    // Query total active family advance payments (excess credits)
+    $familyAdvanceBalance = (float) \App\Models\AdvancePayment::where(function ($query) use ($account) {
+        $applicant = $account->student?->applicant ?: $account->applicant;
+        if ($applicant) {
+            if ($applicant->family_application_id) {
+                $query->where('family_application_id', $applicant->family_application_id);
+            } else {
+                $query->where('user_id', $applicant->user_id);
+            }
+        } else {
+            $query->where('user_id', $account->student?->user_id);
+        }
+    })
+    ->where('remaining_balance', '>', 0)
+    ->sum('remaining_balance');
+
+    // Query sibling accounts under the same family batch
+    $siblingAccounts = \App\Models\StudentAccount::with('student.applicant')
+        ->where(function ($query) use ($account) {
+            $applicant = $account->student?->applicant ?: $account->applicant;
+            if ($applicant) {
+                if ($applicant->family_application_id) {
+                    $query->whereHas('student.applicant', fn($q) => $q->where('family_application_id', $applicant->family_application_id));
+                } else {
+                    $query->whereHas('student.applicant', fn($q) => $q->where('user_id', $applicant->user_id));
+                }
+            } else {
+                $query->whereHas('student', fn($q) => $q->where('user_id', $account->student?->user_id));
+            }
+        })
+        ->orderBy('id')
+        ->get();
+
+    // Ledger balance computation starting point
     $runningBalance = $finalFees;
-    $ledgerItems = [];
 
-    // 1. Paid Enrollment Fee
-    $enrollPaid = 3000.00;
-    $runningBalance -= $enrollPaid;
-    $ledgerItems[] = [
-        'description' => 'Paid Enrollment Fee',
-        'month' => '',
-        'amount' => '',
-        'date' => '30-Dec-25',
-        'paid' => $enrollPaid,
-        'or' => '70105712',
-        'balance' => $runningBalance,
-        'highlight_paid' => true,
-    ];
+    // Find the enrollment payment in payments table to extract actual OR and Date
+    $enrollPaymentRecord = $account->payments()
+        ->where(function($query) {
+            $query->where('remarks', 'like', '%Enrollment%')
+                  ->orWhere('remarks', 'like', '%Downpayment%');
+        })
+        ->first();
+    $enrollOrNumber = $enrollPaymentRecord?->or_number ?? $account->applicant?->payment?->or_number ?? '-';
+    $enrollDate = $enrollPaymentRecord?->paid_at?->format('d-M-y') ?? $account->applicant?->payment?->paid_at?->format('d-M-y') ?? '-';
 
-    // 2. Books and programs charge
-    $runningBalance += $booksCharge;
-    $ledgerItems[] = [
-        'description' => 'Books and programs',
-        'month' => '',
-        'amount' => $booksCharge,
-        'date' => '',
-        'paid' => '',
-        'or' => '',
-        'balance' => $runningBalance,
-        'highlight_paid' => false,
-    ];
+    // Verify payments logged excluding initial payment and excess downpayments
+    $verifiedPayments = $account->payments()
+        ->where('status', 'verified')
+        ->where(function($query) {
+            $query->where('remarks', 'not like', '%Enrollment%')
+                  ->where('remarks', 'not like', '%Downpayment%')
+                  ->where('remarks', 'not like', '%Excess%');
+        })
+        ->orderBy('paid_at')
+        ->get();
 
-    // 3. Paid Books
-    $booksPaid = 1000.00;
-    $runningBalance -= $booksPaid;
-    $ledgerItems[] = [
-        'description' => 'Paid Books',
-        'month' => '',
-        'amount' => '',
-        'date' => '30-Dec-25',
-        'paid' => $booksPaid,
-        'or' => '70105712',
-        'balance' => $runningBalance,
-        'highlight_paid' => true,
-    ];
+    $paymentIndex = 0;
 
-    $monthlyInstallment = 4020.56;
-    $remainingBalance = 36185.00;
+    $billingMonthsCount = $account->monthlyBillings->count() ?: 9;
+    $installmentAmount = $account->monthly_tuition > 0 ? (float)$account->monthly_tuition : round($account->total_balance / $billingMonthsCount, 2);
+    $remainingBalance = (float) $account->remaining_balance;
+
+    // Define comparison date for displaying running balances of monthly installments.
+    // If the actual date is before October 2026, default to October 31, 2026 to allow full simulated scenario testing!
+    $currentDate = now();
+    if ($currentDate->lt(\Carbon\Carbon::parse('2026-10-31'))) {
+        $currentDate = \Carbon\Carbon::parse('2026-10-31');
+    }
 @endphp
 
 <x-admin-layout title="Student SOA Document">
-    <!-- Print optimized styling -->
-    <style>
-        @media print {
-            body {
-                background: white !important;
-                color: black !important;
-            }
-            .print\:hidden {
-                display: none !important;
-            }
-            .print\:border-0 {
-                border: 0 !important;
-            }
-            .print\:shadow-none {
-                box-shadow: none !important;
-            }
-            .print\:p-0 {
-                padding: 0 !important;
-            }
-            .print-container {
-                border: none !important;
-                padding: 0 !important;
-                box-shadow: none !important;
-                max-width: 100% !important;
-            }
-            @page {
-                size: A4;
-                margin: 1.2cm;
-            }
-        }
-    </style>
-
+    @include('admin.soa.partials.show-styles')
     <div class="space-y-6 print:space-y-0">
-        <!-- Top Toolbar with Print Command -->
-        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm print:hidden">
-            <div class="flex items-center gap-3">
-                <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800 uppercase tracking-wider">Official Template Preview</span>
-                <h1 class="text-lg font-black text-slate-900">Official SOA Document View</h1>
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="window.print()" class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-wider text-white hover:bg-slate-800 transition">
-                    <i data-lucide="printer" class="h-4 w-4"></i>
-                    Print SOA (Ctrl+P)
-                </button>
-                <a href="{{ route('admin.soa.index') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-350 bg-slate-50 px-5 py-3 text-xs font-black uppercase tracking-wider text-slate-800 hover:bg-slate-150 transition">
-                    <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                    Back to SOA List
-                </a>
-                <a href="{{ route('admin.finance.dashboard') }}" class="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-3 text-xs font-black uppercase tracking-wider text-white hover:bg-amber-700 transition">
-                    <i data-lucide="layout-dashboard" class="h-4 w-4"></i>
-                    Finance Dashboard
-                </a>
-            </div>
-        </div>
-
-        <!-- Dynamic Main Grid (Left: Official SOA Document, Right: Admin controls) -->
-        <div class="grid gap-6 xl:grid-cols-[1fr_380px] print:grid-cols-1">
-            
-            <!-- OFFICIAL STATEMENT OF ACCOUNT SHEET DOCUMENT -->
-            <div class="bg-white p-8 border border-slate-300 shadow-md rounded-2xl print:border-0 print:shadow-none print:p-0 print-container">
-                <div class="mx-auto max-w-[800px] border border-slate-400 p-6 bg-white font-sans text-xs text-slate-800 leading-normal">
-                    
-                    <!-- 1. School Header (Vector SVG Asset) -->
-                    <div class="border-b border-black pb-2">
-                        <img src="{{ asset('svg/school_billing/header_school_billing.svg') }}" alt="AL MUNAWWARA ISLAMIC SCHOOL" class="w-full h-auto">
-                    </div>
-
-                    <!-- 2. Statement Title Bar (Exact recreation with borders and sage color) -->
-                    <div class="bg-[#DFE7E6] border-y border-black py-1.5 text-center font-bold uppercase tracking-widest text-black mt-2">
-                        STATEMENT OF ACCOUNT SY 2026-2027
-                    </div>
-
-                    <!-- 3. Secondary Layout (Metadata Left + Vertical Divider Bar + Right Student details and Tuition stacked) -->
-                    <div class="grid grid-cols-[210px_55px_1fr] gap-0 mt-4 border-b border-slate-400 pb-4">
-                        
-                        <!-- Left Block: Address + Quote -->
-                        <div class="space-y-4 pr-4 text-[10px] self-start">
-                            <div>
-                                <h4 class="font-bold text-slate-500">Address:</h4>
-                                <p class="font-bold text-slate-900 mt-0.5">Bugac Ma-a Road, Davao City</p>
-                            </div>
-                            <div class="mt-3">
-                                <h4 class="font-bold text-slate-500">Email Add:</h4>
-                                <p class="font-bold text-slate-900 mt-0.5 leading-tight">almunawwaraislamicschool@gmail.com</p>
-                            </div>
-                            <!-- Sahih Quote -->
-                            <div class="pt-3">
-                                <span class="text-[9.5px] font-black uppercase tracking-wider text-[#2962FF] italic">Sahih International</span>
-                                <p class="italic text-[10px] font-semibold text-slate-800 mt-1 leading-normal">
-                                    "Whoever does righteousness, whether male or female, while he is a believer - We will surely cause him to live a good life, and We will surely give them their reward [in the Hereafter] according to the best of what they do."
-                                </p>
-                                <p class="text-[9.5px] font-black text-[#2962FF] mt-1 text-right">Qur'an 16:97</p>
-                            </div>
-                        </div>
-
-                        <!-- Middle Block: Sage Green Divider Bar (Exact color matching template divider) -->
-                        <div class="bg-[#A0B7BC] w-full h-full min-h-[220px]"></div>
-
-                        <!-- Right Block: Student Details & Tuition tables stacked vertically -->
-                        <div class="pl-5 space-y-4">
-                            <!-- Student details plain list (REMOVED borders to match template photo exactly) -->
-                            <div class="grid grid-cols-[115px_1fr] gap-x-2 gap-y-1 text-[10.5px] text-slate-800">
-                                <div class="font-semibold text-slate-500">Name of Student</div>
-                                <div class="font-black text-slate-950 uppercase">{{ $studentName }}</div>
-
-                                <div class="font-semibold text-slate-500">Address</div>
-                                <div class="font-bold text-slate-900">
-                                    <div>{{ $address }}</div>
-                                    <div class="mt-0.5 font-semibold text-slate-700">Email: {{ $email }}</div>
-                                    <div class="mt-0.5 font-black text-slate-950">LRN: {{ $lrn }}</div>
-                                </div>
-
-                                <div class="font-semibold text-slate-500">Category</div>
-                                <div class="font-bold text-slate-900">{{ $category }}</div>
-
-                                <div class="font-semibold text-slate-500">Grade Level</div>
-                                <div class="font-bold text-slate-900">{{ $grade }}</div>
-
-                                <div class="font-semibold text-slate-500">Discount Privilege</div>
-                                <div class="font-bold text-slate-900">{{ $discountPrivilege }}</div>
-
-                                <div class="font-semibold text-slate-500">Discount Status</div>
-                                <div class="font-bold text-slate-900">{{ $discountStatus }}</div>
-                            </div>
-
-                            <!-- Tuition Fee summary table (COLLAPSED thin black borders, white headers) -->
-                            <div class="border border-black">
-                                <table class="w-full text-left text-[10px] border-collapse border border-black">
-                                    <thead>
-                                        <tr class="bg-white border-b border-black text-black font-bold uppercase text-center text-[9px] tracking-wider">
-                                            <th rowspan="2" class="px-2.5 py-1.5 border-r border-black text-left">DESCRIPTION</th>
-                                            <th rowspan="2" class="px-2.5 py-1.5 border-r border-black">AMOUNT</th>
-                                            <th colspan="2" class="px-2.5 py-1.5 border-r border-black">DISCOUNT</th>
-                                            <th rowspan="2" class="px-2.5 py-1.5">NET</th>
-                                        </tr>
-                                        <tr class="bg-white border-b border-black text-black font-bold uppercase text-center text-[9px] tracking-wider">
-                                            <th class="px-2.5 py-1 border-r border-black">%</th>
-                                            <th class="px-2.5 py-1 border-r border-black">AMOUNT</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-black font-semibold text-black">
-                                        <tr>
-                                            <td class="px-2.5 py-1.5 border-r border-black font-bold">Tuition Fees</td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-black">{{ number_format($tuition, 2) }}</td>
-                                            <td class="px-2.5 py-1.5 text-center border-r border-black font-semibold text-black">15%</td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-black text-black font-semibold">{{ number_format($discountAmount, 2) }}</td>
-                                            <td class="px-2.5 py-1.5 text-right font-bold text-black">{{ number_format($tuitionNet, 2) }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="px-2.5 py-1.5 border-r border-black font-bold">Miscellaneous</td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-black">{{ number_format($misc, 2) }}</td>
-                                            <td class="px-2.5 py-1.5 text-center border-r border-black"></td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-black">-</td>
-                                            <td class="px-2.5 py-1.5 text-right font-bold text-black">{{ number_format($misc, 2) }}</td>
-                                        </tr>
-                                        <tr class="bg-white border-t border-black font-bold text-black">
-                                            <td class="px-2.5 py-1.5 border-r border-black font-bold">Total Fees</td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-black font-bold">{{ number_format($totalFees, 2) }}</td>
-                                            <td class="px-2.5 py-1.5 text-center border-r border-black font-semibold text-black"></td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-black text-black font-semibold"></td>
-                                            <td class="px-2.5 py-1.5 text-right font-bold">{{ number_format($finalFees, 2) }}</td>
-                                        </tr>
-                                        <tr class="bg-white border-t border-black font-bold text-black">
-                                            <td class="px-2.5 py-1.5 border-r border-black font-bold">Final Fees</td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-black"></td>
-                                            <td class="px-2.5 py-1.5 text-center border-r border-black"></td>
-                                            <td class="px-2.5 py-1.5 text-right border-r border-black">-</td>
-                                            <td class="px-2.5 py-1.5 text-right font-bold">{{ number_format($finalFees, 2) }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 4. Main Chronological Ledger Table (Collapsing black borders, sage gray header) -->
-                    <div class="mt-4 border border-black">
-                        <table class="w-full text-left text-[10px] border-collapse border border-black">
-                            <thead>
-                                <tr class="bg-[#A0B7BC] text-black font-bold border-b border-black uppercase text-[9.5px]">
-                                    <th class="px-3 py-2 border-r border-black">Description</th>
-                                    <th class="px-3 py-2 text-center border-r border-black">Month</th>
-                                    <th class="px-3 py-2 text-right border-r border-black">Amount</th>
-                                    <th class="px-3 py-2 text-center border-r border-black">Date</th>
-                                    <th class="px-3 py-2 text-center border-r border-black">Amount Paid</th>
-                                    <th class="px-3 py-2 text-center border-r border-black">OR</th>
-                                    <th class="px-3 py-2 text-right">Balance</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-black font-semibold text-black">
-                                <!-- Dynamic Ledger Rows (Matched exactly to photo template) -->
-                                <tr class="bg-[#EBF0EF] text-black">
-                                    <td class="px-3 py-2 border-r border-black font-bold">Paid Enrollment Fee</td>
-                                    <td class="px-3 py-2 text-center border-r border-black"></td>
-                                    <td class="px-3 py-2 text-right border-r border-black"></td>
-                                    <td class="px-3 py-2 text-center border-r border-black">30-Dec-25</td>
-                                    <td class="px-3 py-2 text-center border-r border-black font-bold bg-[#FFFF00] text-black text-[10.5px]">3,000.00</td>
-                                    <td class="px-3 py-2 text-center border-r border-black font-bold">70105712</td>
-                                    <td class="px-3 py-2 text-right font-bold">31,285.00</td>
-                                </tr>
-                                <tr class="bg-[#EBF0EF] text-black">
-                                    <td class="px-3 py-2 border-r border-black font-bold">Books and programs</td>
-                                    <td class="px-3 py-2 text-center border-r border-black"></td>
-                                    <td class="px-3 py-2 text-right border-r border-black">5,900.00</td>
-                                    <td class="px-3 py-2 text-center border-r border-black"></td>
-                                    <td class="px-3 py-2 text-center border-r border-black"></td>
-                                    <td class="px-3 py-2 text-center border-r border-black"></td>
-                                    <td class="px-3 py-2 text-right font-bold">37,185.00</td>
-                                </tr>
-                                <tr class="bg-[#EBF0EF] text-black">
-                                    <td class="px-3 py-2 border-r border-black font-bold">Paid Books</td>
-                                    <td class="px-3 py-2 text-center border-r border-black"></td>
-                                    <td class="px-3 py-2 text-right border-r border-black"></td>
-                                    <td class="px-3 py-2 text-center border-r border-black">30-Dec-25</td>
-                                    <td class="px-3 py-2 text-center border-r border-black font-bold bg-[#FFFF00] text-black text-[10.5px]">1,000.00</td>
-                                    <td class="px-3 py-2 text-center border-r border-black font-bold">70105712</td>
-                                    <td class="px-3 py-2 text-right font-bold">36,185.00</td>
-                                </tr>
-
-                                <!-- Shaded Required Payment Monthly spacer -->
-                                <tr class="bg-[#EBF0EF] font-bold text-black border-t border-black">
-                                    <td class="px-3 py-1.5 border-r border-black">Required Payment Monthly</td>
-                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-right border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-right font-bold text-black">-</td>
-                                </tr>
-
-                                <!-- Year: 2026 -->
-                                <tr class="bg-[#EBF0EF] font-bold text-black border-t border-black">
-                                    <td class="px-3 py-1.5 border-r border-black">Year: 2026</td>
-                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-right border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-right"></td>
-                                </tr>
-                                <!-- July - December installments -->
-                                @foreach (['July', 'August', 'September', 'October', 'November', 'December'] as $month)
-                                    <tr class="bg-[#EBF0EF] text-black">
-                                        <td class="px-3 py-1.5 border-r border-black"></td>
-                                        <td class="px-3 py-1.5 text-center border-r border-black font-bold text-black">{{ $month }}</td>
-                                        <td class="px-3 py-1.5 text-right border-r border-black font-bold">4,020.56</td>
-                                        <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                        <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                        <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                        <td class="px-3 py-1.5 text-right"></td>
-                                    </tr>
-                                @endforeach
-
-                                <!-- Year: 2027 -->
-                                <tr class="bg-[#EBF0EF] font-bold text-black border-t border-black">
-                                    <td class="px-3 py-1.5 border-r border-black font-bold text-black">Year: 2027</td>
-                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-right border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                    <td class="px-3 py-1.5 text-right"></td>
-                                </tr>
-                                <!-- January - March installments -->
-                                @foreach (['January', 'February', 'March'] as $month)
-                                    <tr class="bg-[#EBF0EF] text-black">
-                                        <td class="px-3 py-1.5 border-r border-black"></td>
-                                        <td class="px-3 py-1.5 text-center border-r border-black font-bold text-black">{{ $month }}</td>
-                                        <td class="px-3 py-1.5 text-right border-r border-black font-bold">4,020.56</td>
-                                        <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                        <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                        <td class="px-3 py-1.5 text-center border-r border-black"></td>
-                                        <td class="px-3 py-1.5 text-right"></td>
-                                    </tr>
-                                @endforeach
-
-                                <!-- Shaded Footer Row with TO BE PAID and yellow highlighted PAID -->
-                                <tr class="bg-[#EBF0EF] border-t border-black font-bold uppercase text-[10px]">
-                                    <td class="px-3 py-2 border-r border-black"></td>
-                                    <td class="px-3 py-2 border-r border-black"></td>
-                                    <td class="px-3 py-2 border-r border-black"></td>
-                                    <td class="px-3 py-2 border-r border-black"></td>
-                                    <td class="px-3 py-2 text-center border-r border-black bg-[#A0B7BC] text-black font-bold text-[10px]">TO BE PAID</td>
-                                    <td class="px-3 py-2 text-center border-r border-black bg-[#FFFF00] text-black font-bold text-[10px]">PAID</td>
-                                    <td class="px-3 py-2 text-right"></td>
-                                </tr>
-
-                                <!-- Total Amount to Pay Row (Enclosed in white table rows) -->
-                                <tr class="bg-white border-t border-black font-bold">
-                                    <td colspan="6" class="px-3 py-2 text-left text-black font-bold text-[10px]">Total Amount to pay</td>
-                                    <td class="px-3 py-2 text-right bg-[#A0B7BC] text-black font-bold text-[10.5px] border border-black">{{ number_format($remainingBalance, 2) }}</td>
-                                </tr>
-                                <!-- Due Monthly Payment Row -->
-                                <tr class="bg-white border-t border-black font-bold">
-                                    <td colspan="4" class="px-3 py-2 text-left text-black font-bold text-[10px]">Due Monthly Payment (9 Months)</td>
-                                    <td class="px-3 py-2 text-center bg-[#FFFF00] text-black font-bold text-[10.5px] border border-black">4,020.56</td>
-                                    <td colspan="2" class="px-3 py-2"></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- 5. Bottom Note Row -->
-                    <div class="mt-3 flex justify-end text-[9.5px] text-right font-bold text-slate-600">
-                        <div class="flex flex-col">
-                            <p>Note: Any discrepancies please inform the office.</p>
-                            <p class="text-[#FF0000] uppercase font-extrabold tracking-wide mt-1 underline" style="font-weight:900;">ANY DISCREPANCY PLEASE INFORM, WE WILL CORRECT</p>
-                        </div>
-                    </div>
-
-                    <!-- 6. Thick Yellow Separator and Shukran footer -->
-                    <div class="mt-6 border-t border-slate-400 pt-4 text-center">
-                        <div class="w-11/12 mx-auto h-4 bg-[#FFFF00] mb-4"></div>
-                        <p class="text-xs font-bold tracking-wider text-black uppercase">Shukran. JazakAllahu khayran</p>
-                    </div>
-
-                </div>
-            </div>
-
-            <!-- RIGHT PANEL: SYSTEM TRANSACTION RECORDER -->
-            <div class="space-y-6 print:hidden">
-                <!-- Manual Payment Recorder Form -->
-                <x-card title="Record Payment Receipt" subtitle="SOA ledger receipt allocation entry">
-                    <form method="POST" action="{{ route('admin.soa.payments.add', $account) }}" enctype="multipart/form-data" class="space-y-4">
-                        @csrf
-                        <div>
-                            <label class="mb-2 block text-xs font-black text-slate-800 uppercase tracking-wide">Allocation Purpose</label>
-                            <select name="purpose" required class="w-full rounded-xl border-2 border-slate-300 bg-white p-3 text-sm font-black text-slate-950 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100">
-                                <option value="Tuition Fee">Tuition Fee Installment</option>
-                                <option value="Paid Books">Books and Programs Payment</option>
-                                <option value="Paid Enrollment Fee">Enrollment Fee (Downpayment)</option>
-                                <option value="Other Dues">Other Academic Fees</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="mb-2 block text-xs font-black text-slate-800 uppercase tracking-wide">Amount (PHP)</label>
-                            <input name="amount" type="number" min="1" max="{{ $account->remaining_balance }}" step="0.01" required placeholder="0.00" class="w-full rounded-xl border-2 border-slate-300 bg-white p-3 text-sm font-black text-slate-950 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100">
-                        </div>
-                        <div>
-                            <label class="mb-2 block text-xs font-black text-slate-800 uppercase tracking-wide">Payment Method</label>
-                            <select name="method" required class="w-full rounded-xl border-2 border-slate-300 bg-white p-3 text-sm font-black text-slate-950 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100">
-                                <option value="cash">Cash Payment</option>
-                                <option value="gcash">GCash</option>
-                                <option value="maya">Maya</option>
-                                <option value="bdo">BDO Bank Transfer</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="mb-2 block text-xs font-black text-slate-800 uppercase tracking-wide">Transaction / Reference No.</label>
-                            <input name="reference_no" placeholder="Reference Number" class="w-full rounded-xl border-2 border-slate-300 bg-white p-3 text-sm font-black text-slate-950 placeholder-slate-400 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100">
-                        </div>
-                        <div>
-                            <label class="mb-2 block text-xs font-black text-slate-800 uppercase tracking-wide">Official Receipt (OR) Number</label>
-                            <input name="or_number" placeholder="OR Number (e.g. 70105712)" class="w-full rounded-xl border-2 border-slate-300 bg-white p-3 text-sm font-black text-slate-950 placeholder-slate-400 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100">
-                        </div>
-                        <div>
-                            <label class="mb-2 block text-xs font-black text-slate-800 uppercase tracking-wide">Checked & Verified By</label>
-                            <input name="checked_by" value="Sir Cabel" class="w-full rounded-xl border-2 border-slate-300 bg-slate-100 p-3 text-sm font-black text-slate-950 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100">
-                        </div>
-                        <button class="w-full rounded-2xl bg-amber-600 px-4 py-3 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-amber-700/30 transition hover:bg-amber-700">Record Manual Payment</button>
-                    </form>
-                </x-card>
-            </div>
-        </div>
-
-        <!-- Payments Logs verification list under the document sheet (print:hidden) -->
-        <div class="print:hidden">
-            <x-card title="Payment Verification Logs" subtitle="General financial logs history for administrative review">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm border-collapse">
-                        <thead>
-                            <tr class="border-b border-slate-300 text-xs font-black uppercase tracking-widest text-slate-400">
-                                <th class="px-4 py-3">Method</th>
-                                <th class="px-4 py-3">Reference No.</th>
-                                <th class="px-4 py-3">OR Number</th>
-                                <th class="px-4 py-3">Amount</th>
-                                <th class="px-4 py-3">Status</th>
-                                <th class="px-4 py-3">Checked By</th>
-                                <th class="px-4 py-3 text-right">Verification Date</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-150 font-black text-slate-850">
-                            @forelse ($account->payments as $payment)
-                                <tr class="hover:bg-slate-50/50">
-                                    <td class="px-4 py-4">
-                                        <div class="font-black text-slate-950 uppercase">{{ $payment->method ?? 'Payment' }}</div>
-                                        <div class="mt-1 flex items-center gap-1.5">
-                                            <span class="rounded-full border border-indigo-300 bg-indigo-100 px-3 py-0.5 text-[9px] font-black uppercase tracking-wider text-indigo-950">
-                                                {{ $payment->remarks ?: 'Tuition Fee' }}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-4 font-bold text-slate-700">{{ $payment->reference_no ?? '-' }}</td>
-                                    <td class="px-4 py-4 font-black text-indigo-900">{{ $payment->or_number ?? '-' }}</td>
-                                    <td class="px-4 py-4 font-black text-slate-950">PHP {{ number_format((float) $payment->amount, 2) }}</td>
-                                    <td class="px-4 py-4">
-                                        <x-badge color="{{ ($payment->status ?? '') === 'verified' ? 'green' : (($payment->status ?? '') === 'rejected' ? 'red' : 'yellow') }}">
-                                            {{ Str::upper($payment->status ?? 'pending') }}
-                                        </x-badge>
-                                    </td>
-                                    <td class="px-4 py-4 font-bold text-slate-700">{{ $payment->checked_by ?? '-' }}</td>
-                                    <td class="px-4 py-4 text-right font-bold text-slate-600">{{ optional($payment->verified_at)->format('M d, Y') ?? '-' }}</td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="7" class="px-4 py-10 text-center text-sm font-black text-slate-400">No payment logs recorded.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </x-card>
-        </div>
-
+        @include('admin.soa.partials.show-toolbar')
+        @include('admin.soa.partials.show-document-open')
+        @include('admin.soa.partials.show-student-details')
+        @include('admin.soa.partials.show-ledger')
+        @include('admin.soa.partials.show-document-close')
+        @include('admin.soa.partials.show-payment-history')
     </div>
+    @include('admin.soa.partials.show-payment-modal')
+    @include('admin.soa.partials.show-payment-modal-script')
 </x-admin-layout>

@@ -1,5 +1,5 @@
-<x-admin-layout title="Enrollment Payment Review">
-    <x-card title="Enrollment Payment Review" subtitle="Finance Management by Sir Cabel">
+<x-admin-layout title="Enrollment Payment Approval">
+    <x-card title="Enrollment Payment Approval" subtitle="Finance Management by Sir Cabel">
         <form method="GET" class="mb-4 flex gap-3">
             <select name="status" class="rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm">
                 <option value="">All statuses</option>
@@ -20,13 +20,6 @@
                         $familyLabel = $family['family_label'];
                         $familyStatus = $family['status'];
                         $statusColor = $familyStatus === 'verified' ? 'green' : ($familyStatus === 'rejected' ? 'red' : 'yellow');
-
-                        // Dynamic Purpose Calculation
-                        $amountPerChild = 4000;
-                        $expectedDownpayment = $children->count() * $amountPerChild;
-                        $isTuition = ((float)$family['amount'] > $expectedDownpayment);
-                        $purposeLabel = $isTuition ? 'Tuition Fee' : 'Enrollment Fee';
-                        $purposeBadge = $isTuition ? 'bg-indigo-50 text-indigo-700 border-indigo-100/50' : 'bg-sky-50 text-sky-700 border-sky-100/50';
                     @endphp
                     <tr>
                         <td>
@@ -36,10 +29,6 @@
                                 @if ($children->count() > 1)
                                     <span>&middot; {{ $children->count() }} CHILDREN</span>
                                 @endif
-                                <span>&middot;</span>
-                                <span class="rounded px-2 py-0.5 text-[9px] font-black uppercase tracking-wide border {{ $purposeBadge }}">
-                                    {{ $purposeLabel }}
-                                </span>
                             </div>
                         </td>
                         <td>
@@ -62,7 +51,7 @@
                                 @endforelse
                             </div>
                         </td>
-                        <td>{{ 'PHP '.number_format((float) $family['amount'], 2) }}</td>
+                        <td>{{ number_format((float) $family['amount'], 2) }}</td>
                         <td>{{ $family['methods']->isNotEmpty() ? $family['methods']->join(', ') : '-' }}</td>
                         <td><x-badge color="{{ $statusColor }}">{{ Str::upper($familyStatus) }}</x-badge></td>
                         <td>{{ optional($family['updated_at'])->format('M d, Y') }}</td>

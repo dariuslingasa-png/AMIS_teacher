@@ -46,12 +46,10 @@
             'icon' => 'wallet', 'iconClass' => 'text-amber-600', 'headerClass' => 'text-amber-700', 'activeClass' => 'sidebar-link-active-amber', 'title' => 'Finance Management',
             'links' => [
                 ['Dashboard', 'layout-dashboard', route('admin.finance.dashboard'), request()->routeIs('admin.finance.dashboard')],
-                ['Enrollment Payment Review', 'credit-card', route('admin.payments.index'), request()->routeIs('admin.payments.*')],
+                ['Enrollment Payment Approval', 'credit-card', route('admin.payments.index'), request()->routeIs('admin.payments.*')],
                 ['SOA', 'scroll-text', route('admin.soa.index'), request()->routeIs('admin.soa.*')],
-                ['Tuition & Fees', 'receipt', route('admin.soa.index'), request()->routeIs('admin.soa.*')],
-                ['Discounts', 'percent', route('admin.settings.discounts'), request()->routeIs('admin.settings.discounts')],
+                ['Fee & Discount', 'receipt', route('admin.finance.fees'), request()->routeIs('admin.finance.fees')],
                 ['Billing', 'file-spreadsheet', route('admin.soa.index'), false],
-                ['Receipts', 'badge-receipt', route('admin.payments.index'), false],
             ],
         ],
         [
