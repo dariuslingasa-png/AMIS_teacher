@@ -238,7 +238,9 @@
                                 </td>
                             </tr>
                             @endif
+                        </tbody>
                     </table>
                 </div>
 
             </div>
+</x-card>
