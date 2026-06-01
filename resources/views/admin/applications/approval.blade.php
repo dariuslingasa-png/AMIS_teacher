@@ -10,13 +10,11 @@
         $statusColor = ['approved' => 'green', 'rejected' => 'red', 'under_review' => 'blue', 'ready_for_submission' => 'yellow', 'pending' => 'yellow', 'submitted' => 'purple'];
         $readiness = function ($applicant) use ($reviewService) {
             $docsReady = $reviewService->areAllDocumentsApproved($applicant);
-            $paymentReady = ($applicant->payment->status ?? null) === 'verified';
             return match (true) {
                 $applicant->status === 'approved' => ['Ready', 'green', 'Approved enrollment'],
                 $applicant->status === 'rejected' => ['Blocked', 'red', 'Rejected application'],
-                $paymentReady && $docsReady => ['Ready', 'green', 'Ready for final approval'],
-                $paymentReady => ['Ready', 'green', 'Payment verified; approve with document remarks'],
-                default => ['Blocked', 'red', 'Enrollment fee payment is prior'],
+                $docsReady => ['Ready', 'green', 'Ready for final approval'],
+                default => ['Ready', 'green', 'Approval allowed; follow up documents/payment separately'],
             };
         };
     @endphp

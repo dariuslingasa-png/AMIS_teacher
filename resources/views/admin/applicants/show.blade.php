@@ -22,10 +22,9 @@
         default => "Waiting for Verification ({$financeReviewer})",
     };
     $approvalReadinessLabel = match (true) {
-        $applicant->status === 'approved' && $paymentOk => 'Enrollment Approved ✅',
-        $payment?->status === 'rejected' => 'Enrollment On Hold / Payment Rejected',
+        $applicant->status === 'approved' => 'Enrollment Approved',
         $canApprove => 'Ready for Approval / Under Review',
-        default => 'Not Ready for Enrollment / Pending',
+        default => 'Ready for Approval / Follow-up',
     };
     $currentStatus = $applicant->status ?? 'under_review';
     $currentStatusLabel = $statusLabels[$currentStatus] ?? Str::headline($currentStatus);
@@ -530,21 +529,21 @@
                     <div class="space-y-3 text-sm">
                         <div class="review-readiness-row"><span>Documents</span><span class="readiness-pill {{ $allDocsOk ? 'readiness-emerald' : 'readiness-amber' }}">{{ $allDocsOk ? 'Approved' : 'Pending / Not Prior' }}</span></div>
                         <div class="review-readiness-row"><span>Payment</span><span class="readiness-pill {{ $paymentOk ? 'readiness-emerald' : ($payment?->status === 'rejected' ? 'readiness-rose' : 'readiness-orange') }}">{{ $paymentReadinessLabel }}</span></div>
-                        <div class="review-readiness-row"><span>Approval</span><span class="readiness-pill {{ $applicant->status === 'approved' ? 'readiness-emerald' : ($payment?->status === 'rejected' ? 'readiness-rose' : ($canApprove ? 'readiness-emerald' : 'readiness-amber')) }}">{{ $approvalReadinessLabel }}</span></div>
+                        <div class="review-readiness-row"><span>Approval</span><span class="readiness-pill {{ $applicant->status === 'approved' || $canApprove ? 'readiness-emerald' : 'readiness-amber' }}">{{ $approvalReadinessLabel }}</span></div>
                         @if (!$paymentOk)
-                            <div class="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold leading-5 text-rose-700">
+                            <div class="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-700">
                                 @if ($payment?->status === 'rejected')
-                                    Payment rejected by {{ $financeReviewer }}. Enrollment is on hold.
+                                    Payment rejected by {{ $financeReviewer }}. You may still approve; finance follow-up remains separate.
                                 @else
-                                    Enrollment fee is PRIOR. Do not approve until payment is uploaded and verified.
+                                    Payment is not verified yet. You may still approve; finance can verify or follow up later.
                                 @endif
                             </div>
                         @elseif (!$allDocsOk)
                             <div class="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-700">
-                                Documents are not prior. You may approve because enrollment fee is verified; missing document remarks will be kept for follow-up while AMIS ID, SOA, and Microsoft account generation continue.
+                                Documents are not prior. You may approve; missing document remarks will be kept for follow-up while AMIS ID, SOA, and Microsoft account generation continue.
                             </div>
                         @endif
-                        @if ($paymentOk && $applicant->status !== 'approved')
+                        @if ($canApprove && $applicant->status !== 'approved')
                             <div class="pt-3.5 border-t border-slate-100 mt-2">
                                 <form method="POST" action="{{ route('admin.applicants.status', $applicant) }}">
                                     @csrf

@@ -93,7 +93,7 @@ class EnrollmentReviewService
             'payment' => $payment,
             'hasPaymentProof' => $hasPaymentProof,
             'paymentOk' => $paymentOk,
-            'canApprove' => $paymentOk,
+            'canApprove' => true,
             'alreadyFinal' => in_array($applicant->status, ['approved', 'rejected'], true),
             'studentAddress' => $this->studentAddress($applicant),
             'homeAddress' => $this->homeAddress($applicant),
@@ -190,30 +190,6 @@ class EnrollmentReviewService
     public function assertReadyForApproval(EnrollmentApplicant $applicant): void
     {
         $applicant->loadMissing('payment');
-
-        $hasVerifiedPayment = false;
-        if ($applicant->payment && $applicant->payment->status === 'verified') {
-            $hasVerifiedPayment = true;
-        } else {
-            $familyId = $applicant->family_application_id ?: $applicant->id;
-            $siblingPayment = \App\Models\Payment::whereHas('applicant', function ($query) use ($familyId) {
-                $query->where(function ($q) use ($familyId) {
-                    $q->where('family_application_id', $familyId)
-                      ->orWhere('id', $familyId);
-                });
-            })
-            ->where('status', 'verified')
-            ->first();
-
-            if ($siblingPayment) {
-                $hasVerifiedPayment = true;
-                $applicant->setRelation('payment', $siblingPayment);
-            }
-        }
-
-        if (!$hasVerifiedPayment) {
-            throw ValidationException::withMessages(['status' => 'NOT ALLOW: enrollment fee payment proof is required before approval.']);
-        }
     }
 
     public function missingDocumentRemarks(EnrollmentApplicant $applicant): ?string
