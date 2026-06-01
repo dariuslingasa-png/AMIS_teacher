@@ -239,11 +239,28 @@
                 padding: 0 !important;
                 margin: 0 !important;
                 box-shadow: none !important;
-                max-width: 125% !important;
-                width: 125% !important;
+                max-width: 130% !important;
+                width: 130% !important;
                 background: #ffffff !important;
-                transform: scale(0.8) !important;
+                transform: scale(0.7) !important;
                 transform-origin: top left !important;
+            }
+
+            /* Reduce all font sizes for print to fit on fewer pages */
+            .print-container * {
+                font-size: inherit !important;
+            }
+            .print-container table {
+                font-size: 11px !important;
+            }
+            .print-container table th,
+            .print-container table td {
+                padding: 4px 6px !important;
+                font-size: 11px !important;
+            }
+            .print-container h2,
+            .print-container .text-center.font-bold {
+                font-size: 16px !important;
             }
 
             .billing-grid-container {
@@ -263,7 +280,7 @@
 
             @page {
                 size: A4 portrait;
-                margin: 0.8cm !important; /* Perfect margin for single-page print */
+                margin: 0.5cm !important;
             }
         }
     </style>
