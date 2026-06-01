@@ -242,25 +242,8 @@
                 max-width: 130% !important;
                 width: 130% !important;
                 background: #ffffff !important;
-                transform: scale(0.7) !important;
+                transform: scale(0.75) !important;
                 transform-origin: top left !important;
-            }
-
-            /* Reduce all font sizes for print to fit on fewer pages */
-            .print-container * {
-                font-size: inherit !important;
-            }
-            .print-container table {
-                font-size: 11px !important;
-            }
-            .print-container table th,
-            .print-container table td {
-                padding: 4px 6px !important;
-                font-size: 11px !important;
-            }
-            .print-container h2,
-            .print-container .text-center.font-bold {
-                font-size: 16px !important;
             }
 
             .billing-grid-container {
@@ -271,11 +254,11 @@
                 min-height: 160px !important;
             }
             .billing-right-grid {
-                grid-template-columns: 150px 1fr !important;
+                grid-template-columns: 130px 1fr 130px 1fr !important;
             }
 
             .border.border-slate-400 {
-                border: none !important; /* Remove outer sheet borders for perfect A4 page print */
+                border: none !important;
             }
 
             @page {

@@ -1,17 +1,17 @@
                     <div>
-                        <table class="ledger-table w-full text-left" style="font-size: 19.5px !important; border-collapse: collapse;">
+                        <table class="ledger-table w-full text-left" style="font-size: 16.5px !important; border-collapse: collapse;">
                             <thead>
-                                <tr class="bg-sage-medium text-black font-bold uppercase" style="font-size: 19.5px !important; background-color: #b8cece !important;">
-                                    <th class="px-3 py-3" style="background-color: #b8cece !important;">DESCRIPTION</th>
-                                    <th class="px-3 py-3 text-center" style="background-color: #b8cece !important;">MONTH</th>
-                                    <th class="px-3 py-3 text-right" style="background-color: #b8cece !important;">AMOUNT</th>
-                                    <th class="px-3 py-3 text-center" style="background-color: #b8cece !important;">DATE</th>
-                                    <th class="px-3 py-3 text-center" style="background-color: #b8cece !important;">AMOUNT PAID</th>
-                                    <th class="px-3 py-3 text-center" style="background-color: #b8cece !important;">OR</th>
-                                    <th class="px-3 py-3 text-right" style="background-color: #b8cece !important;">BALANCE</th>
+                                <tr class="bg-sage-medium text-black font-bold uppercase" style="font-size: 16.5px !important; background-color: #b8cece !important;">
+                                    <th class="px-2 py-2" style="background-color: #b8cece !important;">DESCRIPTION</th>
+                                    <th class="px-2 py-2 text-center" style="background-color: #b8cece !important;">MONTH</th>
+                                    <th class="px-2 py-2 text-right" style="background-color: #b8cece !important;">AMOUNT</th>
+                                    <th class="px-2 py-2 text-center" style="background-color: #b8cece !important;">DATE</th>
+                                    <th class="px-2 py-2 text-center" style="background-color: #b8cece !important;">AMOUNT PAID</th>
+                                    <th class="px-2 py-2 text-center" style="background-color: #b8cece !important;">OR</th>
+                                    <th class="px-2 py-2 text-right" style="background-color: #b8cece !important;">BALANCE</th>
                                 </tr>
                             </thead>
-                            <tbody class="font-semibold text-black">
+                            <tbody class="font-semibold text-black" style="font-size: 16.5px !important;">
                                 <!-- Dynamic Ledger Rows (Matched exactly to photo template) -->
                                 @if ($enrollPaid > 0)
                                 @if ($enrollPaymentRecord)
