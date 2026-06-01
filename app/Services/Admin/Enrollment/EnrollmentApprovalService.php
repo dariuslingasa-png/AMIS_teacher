@@ -3,6 +3,7 @@
 namespace App\Services\Admin\Enrollment;
 
 use App\Models\EnrollmentApplicant;
+use App\Models\SchoolFee;
 use App\Models\Student;
 use App\Services\MicrosoftGraphService;
 use App\Services\MsTeamsEnrollmentService;
@@ -21,11 +22,23 @@ class EnrollmentApprovalService
 
     public function approve(EnrollmentApplicant $applicant): string
     {
-        $applicant->loadMissing('payment', 'student');
+        $applicant->loadMissing('payment', 'student.account');
         $this->reviewService->assertReadyForApproval($applicant);
 
         if ($applicant->student) {
+            if (! $applicant->student->account && $this->shouldGenerateSoa($applicant)) {
+                $this->generateSoa($applicant->student, $applicant);
+
+                return 'Student already onboarded. Missing SOA was generated.';
+            }
+
             return 'Student already onboarded.';
+        }
+
+        if ($this->shouldGenerateSoa($applicant) && ! SchoolFee::forGrade($applicant->grade_level, $applicant->school_year)) {
+            throw ValidationException::withMessages([
+                'status' => "No school fees found for {$applicant->grade_level} SY {$applicant->school_year}. Add the fee first, then approve again.",
+            ]);
         }
 
         $studentNumber = $this->generateStudentNumber();
@@ -155,6 +168,10 @@ class EnrollmentApprovalService
             (new SoaService())->generate($student, $applicant);
         } catch (\Throwable $exception) {
             Log::error('SOA generation failed: '.$exception->getMessage());
+
+            throw ValidationException::withMessages([
+                'status' => 'Application approval created the student record, but SOA generation failed: '.$exception->getMessage(),
+            ]);
         }
     }
 
