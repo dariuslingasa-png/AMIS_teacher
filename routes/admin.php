@@ -31,8 +31,12 @@ Route::name('admin.')->group(function () {
         ->middleware('auth')
         ->name('logout');
 
-    Route::get('/auth/microsoft', [AdminAuthController::class, 'microsoftRedirect'])->name('microsoft.redirect');
-    Route::get('/auth/microsoft/callback', [AdminAuthController::class, 'microsoftCallback'])->name('microsoft.callback');
+    Route::get('/auth/microsoft', [AdminAuthController::class, 'microsoftRedirect'])
+        ->middleware('throttle:5,1')
+        ->name('microsoft.redirect');
+    Route::get('/auth/microsoft/callback', [AdminAuthController::class, 'microsoftCallback'])
+        ->middleware('throttle:10,1')
+        ->name('microsoft.callback');
 
     Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
@@ -113,8 +117,8 @@ Route::name('admin.')->group(function () {
             Route::get('/grade-levels', [AdminAcademicController::class, 'curriculum'])->name('grade-levels');
             Route::get('/teachers', [AdminAcademicController::class, 'teachers'])->name('teachers');
             Route::get('/schedules', [AdminAcademicController::class, 'schedules'])->name('schedules');
-            Route::get('/school-years', [AdminAcademicController::class, 'curriculum'])->name('school-years');
-            Route::get('/calendar', [AdminAcademicController::class, 'curriculum'])->name('calendar');
+            Route::get('/school-years', [AdminAcademicController::class, 'schoolYears'])->name('school-years');
+            Route::get('/calendar', [AdminAcademicController::class, 'calendar'])->name('calendar');
             Route::get('/operations', [AdminAcademicController::class, 'operations'])->name('operations');
         });
 

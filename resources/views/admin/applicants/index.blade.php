@@ -10,12 +10,11 @@
         $currentDir = request('dir', 'desc');
         $inputClass = 'h-11 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100';
         $childStatusColor = ['approved' => 'green', 'rejected' => 'red', 'under_review' => 'blue', 'ready_for_submission' => 'yellow', 'pending' => 'yellow', 'submitted' => 'yellow'];
-        $childPaymentLabel = fn ($child) => match ($child->payment->status ?? null) {
-            'verified' => 'Paid',
-            'pending' => 'Pending',
-            default => 'No Payment',
+        $familyPaymentChip = fn ($label) => match ($label) {
+            'Paid' => 'border-emerald-200 bg-emerald-50 text-emerald-700',
+            'Pending' => 'border-amber-200 bg-amber-50 text-amber-700',
+            default => 'border-slate-200 bg-white/80 text-slate-600',
         };
-        $childPaymentColor = fn ($label) => ['Paid' => 'green', 'Pending' => 'yellow', 'No Payment' => 'gray'][$label] ?? 'gray';
         $typeLabel = fn ($type) => match (strtolower((string) $type)) {
             'old' => 'OLD',
             'returning', 'returnee', 'existing' => 'RETURNING',
@@ -143,7 +142,6 @@
                             <th class="w-28 px-5 py-4 font-bold">Type</th>
                             <th class="w-36 px-5 py-4 font-bold">Grade</th>
                             <th class="w-44 px-5 py-4 font-bold">Enrollment Status</th>
-                            <th class="w-40 px-5 py-4 font-bold">Payment Status</th>
                             <th class="w-36 px-5 py-4 text-right font-bold">Action</th>
                         </tr>
                     </thead>
@@ -159,7 +157,7 @@
                                 $discountLabel = $maxDiscount > 0 ? 'SIBLINGS DISCOUNT '.rtrim(rtrim(number_format($maxDiscount, 2), '0'), '.').'%' : 'SIBLINGS DISCOUNT';
                             @endphp
                             <tr>
-                                <td colspan="7" class="px-0 py-0">
+                                <td colspan="6" class="px-0 py-0">
                                     <div class="border-l-4 px-5 py-3 {{ $accent['wrap'] }}">
                                         <div class="flex items-center justify-between gap-4">
                                             <div class="flex items-center gap-3">
@@ -169,14 +167,30 @@
                                                     <p class="mt-1 text-xs font-bold uppercase tracking-wide text-slate-500">FAMILY APPLICATION #{{ str_pad($family['family_no'], 4, '0', STR_PAD_LEFT) }}</p>
                                                 </div>
                                             </div>
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex flex-wrap items-center justify-end gap-2">
                                                 @if ($family['children_count'] > 1)
-                                                    <span class="rounded-md px-2.5 py-1 text-xs font-extrabold {{ $accent['badge'] }}">{{ $family['approved_count'] }}/{{ $family['children_count'] }} CHILDREN APPROVED</span>
-                                                    <span class="rounded-md px-2.5 py-1 text-xs font-extrabold {{ $accent['badge'] }}">{{ $discountLabel }}</span>
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-black uppercase tracking-wide shadow-sm {{ $accent['text'] }}">
+                                                        <i data-lucide="check-circle-2" class="h-3.5 w-3.5"></i>
+                                                        {{ $family['approved_count'] }}/{{ $family['children_count'] }} Approved
+                                                    </span>
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-sky-700 shadow-sm">
+                                                        <i data-lucide="percent" class="h-3.5 w-3.5"></i>
+                                                        {{ $discountLabel }}
+                                                    </span>
                                                 @else
-                                                    <span class="rounded-md px-2.5 py-1 text-xs font-extrabold {{ $accent['badge'] }}">{{ $family['approved_count'] }}/1 CHILD APPROVED</span>
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-black uppercase tracking-wide shadow-sm {{ $accent['text'] }}">
+                                                        <i data-lucide="check-circle-2" class="h-3.5 w-3.5"></i>
+                                                        {{ $family['approved_count'] }}/1 Approved
+                                                    </span>
                                                 @endif
-                                                <span class="rounded-md px-2.5 py-1 text-xs font-extrabold {{ $accent['badge'] }}">{{ $family['children_count'] }} {{ \Illuminate\Support\Str::plural('CHILD', $family['children_count']) }}</span>
+                                                <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-black uppercase tracking-wide shadow-sm {{ $familyPaymentChip($family['payment_status']) }}">
+                                                    <i data-lucide="receipt" class="h-3.5 w-3.5"></i>
+                                                    {{ $family['payment_status'] }}
+                                                </span>
+                                                <span class="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/80 px-3 py-1.5 text-xs font-black uppercase tracking-wide shadow-sm {{ $accent['text'] }}">
+                                                    <i data-lucide="users" class="h-3.5 w-3.5"></i>
+                                                    {{ $family['children_count'] }} {{ \Illuminate\Support\Str::plural('Child', $family['children_count']) }}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -188,7 +202,6 @@
                                     $childInitials = collect(explode(' ', $childName))->filter()->take(2)->map(fn ($part) => \Illuminate\Support\Str::substr($part, 0, 1))->join('');
                                     $photoUrl = \App\Support\EnrollmentStorage::url($child->photo_2x2_url);
                                     $statusLabel = $statusLabels[$child->status] ?? \Illuminate\Support\Str::headline($child->status ?? 'under_review');
-                                    $paymentLabel = $childPaymentLabel($child);
                                     $studentType = $typeLabel($child->student_type);
                                 @endphp
                                 <tr class="transition hover:bg-slate-50">
@@ -216,7 +229,6 @@
                                     </td>
                                     <td class="px-5 py-4 font-bold text-slate-700">{{ $child->grade_level ?? 'Not provided' }}</td>
                                     <td class="px-5 py-4"><x-badge :color="$childStatusColor[$child->status] ?? 'blue'">{{ $statusLabel }}</x-badge></td>
-                                    <td class="px-5 py-4"><x-badge :color="$childPaymentColor($paymentLabel)">{{ $paymentLabel }}</x-badge></td>
                                     <td class="px-5 py-4 text-right">
                                         <a href="{{ route('admin.applicants.show', $child) }}" title="View child application" class="inline-flex h-9 items-center gap-2 rounded-md border border-emerald-100 bg-white px-3 text-xs font-bold text-emerald-700 transition hover:border-emerald-200 hover:bg-emerald-50">
                                             <i data-lucide="eye" class="h-4 w-4"></i>
@@ -226,7 +238,7 @@
                                 </tr>
                             @endforeach
                         @empty
-                            <tr><td colspan="7" class="px-5 py-12 text-center text-sm text-slate-500">No family applications found.</td></tr>
+                            <tr><td colspan="6" class="px-5 py-12 text-center text-sm text-slate-500">No family applications found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

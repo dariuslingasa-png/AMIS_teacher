@@ -66,7 +66,10 @@
                     </div>
                     <div>
                         <label class="mb-1.5 block text-[11px] font-black text-slate-500 uppercase tracking-wider">Official Receipt (OR) Number</label>
-                        <input name="or_number" required placeholder="e.g. 70105712" class="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-sm font-bold text-slate-950 placeholder-slate-400 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                        <input name="or_number" value="{{ old('or_number') }}" required placeholder="e.g. 70105712" class="w-full rounded-xl border @error('or_number') border-rose-300 bg-rose-50/60 @else border-slate-200 bg-slate-50/50 @enderror p-3 text-sm font-bold text-slate-950 placeholder-slate-400 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                        @error('or_number')
+                            <p class="mt-1.5 text-[11px] font-bold text-rose-600">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
 
@@ -87,5 +90,28 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="paymentBreakdownModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-150 print:hidden" style="background-color: rgba(15, 23, 42, 0.38);">
+        <div id="paymentBreakdownModalCard" class="relative w-full max-w-5xl transform scale-95 opacity-0 transition-all duration-150 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+            <div class="flex items-center justify-between gap-4 border-b border-slate-200 bg-white p-5 text-slate-900">
+                <div class="flex items-start gap-3">
+                    <button id="paymentBreakdownBack" onclick="restorePaymentBreakdownList()" class="hidden mt-7 h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition duration-150">
+                        <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                    </button>
+                    <div>
+                        <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">Payment Breakdown</span>
+                        <h3 id="paymentBreakdownTitle" class="mt-3 text-xl font-black tracking-tight text-slate-950 flex items-center gap-2">
+                            <i data-lucide="receipt-text" class="h-6 w-6 text-emerald-600"></i>
+                            Payment Details
+                        </h3>
+                    </div>
+                </div>
+                <button onclick="closePaymentBreakdownModal()" class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition duration-150">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+            <div id="paymentBreakdownBody" class="p-6"></div>
         </div>
     </div>

@@ -276,6 +276,29 @@
     top: 5.5rem;
 }
 
+.review-panel .amis-card > div:last-child {
+    padding: 1rem 1.5rem 1.25rem;
+}
+
+.review-panel form,
+.review-panel textarea,
+.review-select-button,
+.review-select-menu {
+    box-sizing: border-box;
+}
+
+.review-readiness-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.review-readiness-row > span:first-child {
+    min-width: 0;
+    padding-top: .15rem;
+}
+
 .preview-modal {
     position: fixed;
     inset: 0;

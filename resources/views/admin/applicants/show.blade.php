@@ -528,9 +528,9 @@
 
                 <x-card title="Readiness">
                     <div class="space-y-3 text-sm">
-                        <div class="flex justify-between gap-3"><span>Documents</span><span class="readiness-pill {{ $allDocsOk ? 'readiness-emerald' : 'readiness-amber' }}">{{ $allDocsOk ? 'Approved' : 'Pending / Not Prior' }}</span></div>
-                        <div class="flex justify-between gap-3"><span>Payment</span><span class="readiness-pill {{ $paymentOk ? 'readiness-emerald' : ($payment?->status === 'rejected' ? 'readiness-rose' : 'readiness-orange') }}">{{ $paymentReadinessLabel }}</span></div>
-                        <div class="flex justify-between gap-3"><span>Approval</span><span class="readiness-pill {{ $applicant->status === 'approved' ? 'readiness-emerald' : ($payment?->status === 'rejected' ? 'readiness-rose' : ($canApprove ? 'readiness-emerald' : 'readiness-amber')) }}">{{ $approvalReadinessLabel }}</span></div>
+                        <div class="review-readiness-row"><span>Documents</span><span class="readiness-pill {{ $allDocsOk ? 'readiness-emerald' : 'readiness-amber' }}">{{ $allDocsOk ? 'Approved' : 'Pending / Not Prior' }}</span></div>
+                        <div class="review-readiness-row"><span>Payment</span><span class="readiness-pill {{ $paymentOk ? 'readiness-emerald' : ($payment?->status === 'rejected' ? 'readiness-rose' : 'readiness-orange') }}">{{ $paymentReadinessLabel }}</span></div>
+                        <div class="review-readiness-row"><span>Approval</span><span class="readiness-pill {{ $applicant->status === 'approved' ? 'readiness-emerald' : ($payment?->status === 'rejected' ? 'readiness-rose' : ($canApprove ? 'readiness-emerald' : 'readiness-amber')) }}">{{ $approvalReadinessLabel }}</span></div>
                         @if (!$paymentOk)
                             <div class="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold leading-5 text-rose-700">
                                 @if ($payment?->status === 'rejected')
@@ -635,4 +635,3 @@
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </x-admin-layout>
-

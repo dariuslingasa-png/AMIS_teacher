@@ -223,11 +223,8 @@ class ApplicationQuery
     private function familyPaymentStatus(SupportCollection $children): string
     {
         $statuses = $children->map(fn ($child) => $child->payment->status ?? null);
-        if ($statuses->every(fn ($status) => $status === 'verified')) {
-            return 'Paid';
-        }
         if ($statuses->contains('verified')) {
-            return 'Partial Payment';
+            return 'Paid';
         }
         if ($statuses->contains('pending')) {
             return 'Pending';

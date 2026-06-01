@@ -1,4 +1,4 @@
-        <div class="print:hidden max-w-[900px] mx-auto bg-white p-8 border border-slate-200 rounded-3xl shadow-sm space-y-6">
+        <div class="print:hidden mx-auto bg-white p-8 border border-slate-200 rounded-3xl shadow-sm space-y-6">
             
             <!-- Ledger Title -->
             <div class="mb-4 flex items-center justify-between">
@@ -32,6 +32,7 @@
                                     'rejected' => 'bg-rose-50 text-rose-700 border-rose-200',
                                     default => 'bg-amber-50 text-amber-700 border-amber-200',
                                 };
+                                $receiptDisplayUrl = \App\Support\EnrollmentStorage::url($payment->receipt_url);
                             @endphp
                             <tr class="hover-row transition-colors">
                                 <td class="px-4 py-4">
@@ -62,11 +63,11 @@
                                     </span>
                                 </td>
                                 <td class="px-4 py-4 text-center">
-                                    @if ($payment->receipt_url)
-                                        <a href="{{ asset('storage/' . $payment->receipt_url) }}" target="_blank" class="btn-premium btn-view inline-flex items-center gap-2">
+                                    @if ($receiptDisplayUrl)
+                                        <button type="button" onclick="openPaymentProofInBreakdown(@js($receiptDisplayUrl))" class="btn-premium btn-view inline-flex items-center gap-2">
                                             <i data-lucide="eye" class="h-4 w-4"></i>
                                             View
-                                        </a>
+                                        </button>
                                     @else
                                         <span class="text-[13.5px] text-slate-400 font-semibold">No Proof</span>
                                     @endif

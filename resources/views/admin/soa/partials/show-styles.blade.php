@@ -47,11 +47,6 @@
             background-color: #e2ebe9 !important;
         }
 
-        /* Ensure breakdown row td's respect the custom white background */
-        table tbody tr.breakdown-row td {
-            background-color: #ffffff !important;
-        }
-
         /* Preserve specialized highlights */
         table tbody td.bg-sage-medium {
             background-color: #b8cece !important;

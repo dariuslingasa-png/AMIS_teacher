@@ -14,7 +14,53 @@
                             <tbody class="font-semibold text-black">
                                 <!-- Dynamic Ledger Rows (Matched exactly to photo template) -->
                                 @if ($enrollPaid > 0)
-                                <tr class="bg-sage-row text-black">
+                                @if ($enrollPaymentRecord)
+                                    @php
+                                        $enrollProofUrl = $enrollPaymentRecord->receipt_url ?? $account->applicant?->payment?->receipt_url;
+                                        $enrollProofDisplayUrl = \App\Support\EnrollmentStorage::url($enrollProofUrl);
+                                    @endphp
+                                    <template id="payment-breakdown-template-enrollment">
+                                        <div class="mb-4 flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
+                                            <div>
+                                                <div class="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">Total Paid</div>
+                                                <div class="mt-1 text-sm font-bold text-emerald-950">Enrollment fee payment</div>
+                                            </div>
+                                            <div class="text-2xl font-black text-emerald-700">PHP {{ number_format($enrollPaid, 2) }}</div>
+                                        </div>
+                                        <div class="overflow-x-auto">
+                                            <table class="admin-ledger-table w-full text-left">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="px-4 py-3">Payment</th>
+                                                        <th class="px-4 py-3 text-center">Proof</th>
+                                                        <th class="px-4 py-3 text-center">Date</th>
+                                                        <th class="px-4 py-3 text-right">Amount Paid</th>
+                                                        <th class="px-4 py-3 text-center">OR</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="font-semibold text-black">
+                                                    <tr class="hover-row transition-colors">
+                                                        <td class="px-4 py-4 font-bold text-teal-800">Enrollment Fee</td>
+                                                        <td class="px-4 py-4 text-center">
+                                                            @if ($enrollProofDisplayUrl)
+                                                                <button type="button" onclick="openPaymentProofInBreakdown(@js($enrollProofDisplayUrl))" class="btn-premium btn-view inline-flex items-center gap-2">
+                                                                    <i data-lucide="eye" class="h-4 w-4"></i>
+                                                                    View Proof
+                                                                </button>
+                                                            @else
+                                                                <span class="text-[13.5px] text-slate-400 font-semibold">No Proof</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="px-4 py-4 text-center">{{ $enrollPaymentRecord->paid_at?->format('d-M-y') ?? $enrollPaymentRecord->created_at?->format('d-M-y') ?? $enrollDate }}</td>
+                                                        <td class="px-4 py-4 text-right font-black text-black bg-[#FFFF00]" style="font-size: 19.5px !important;">{{ number_format($enrollPaid, 2) }}</td>
+                                                        <td class="px-4 py-4 text-center font-bold">{{ $enrollOrNumber }}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </template>
+                                @endif
+                                <tr class="bg-sage-row text-black @if($enrollPaymentRecord) cursor-pointer hover:bg-[#e2ebe9] transition-colors select-none @endif" @if($enrollPaymentRecord) onclick="openPaymentBreakdownModal('payment-breakdown-template-enrollment', 'Enrollment Fee')" @endif>
                                     <td class="px-3 py-3 font-bold">Paid Enrollment Fee</td>
                                     <td class="px-3 py-3 text-center"></td>
                                     <td class="px-3 py-3 text-right"></td>
@@ -154,13 +200,64 @@
                                              
                                              $billingDueDate = \Carbon\Carbon::parse($billing->due_date);
                                              $isBillingDueOrPassed = $billingDueDate->lte($currentDate);
+                                             $shouldShowRunningBalance = $isBillingDueOrPassed || $payAmount > 0;
                                          @endphp
                                         
-                                         <!-- Payment Breakdown Sub-rows (Rendered ABOVE the main row) -->
-                                         @if (count($contributions) > 1)
+                                         <!-- Payment Breakdown Modal Content -->
+                                         @if (count($contributions) > 0)
                                              @php
                                                  $runningBalanceSub = $runningBalanceBeforeThisMonth;
                                              @endphp
+                                             <template id="payment-breakdown-template-{{ $billing->id }}">
+                                                 @php
+                                                     $totalBreakdownPaid = array_sum(array_map(fn($item) => (float) $item['amount'], $contributions));
+                                                 @endphp
+                                                 <div class="mb-4 flex items-center justify-between rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
+                                                     <div>
+                                                         <div class="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">Total Paid</div>
+                                                         <div class="mt-1 text-sm font-bold text-emerald-950">{{ $billing->month_name }} payment allocation</div>
+                                                     </div>
+                                                     <div class="text-2xl font-black text-emerald-700">PHP {{ number_format($totalBreakdownPaid, 2) }}</div>
+                                                 </div>
+                                                 <div class="overflow-x-auto">
+                                                     <table class="admin-ledger-table w-full text-left">
+                                                         <thead>
+                                                             <tr>
+                                                                 <th class="px-4 py-3">Payment</th>
+                                                                 <th class="px-4 py-3 text-center">Proof</th>
+                                                                 <th class="px-4 py-3 text-center">Date</th>
+                                                                 <th class="px-4 py-3 text-right">Amount Paid</th>
+                                                                 <th class="px-4 py-3 text-center">OR</th>
+                                                             </tr>
+                                                         </thead>
+                                                         <tbody class="font-semibold text-black">
+                                                             @foreach ($contributions as $index => $c)
+                                                                 @php
+                                                                     $proofUrl = $c['receipt_url'] ?? $account->applicant?->payment?->receipt_url;
+                                                                     $proofDisplayUrl = \App\Support\EnrollmentStorage::url($proofUrl);
+                                                                 @endphp
+                                                                 <tr class="hover-row transition-colors">
+                                                                     <td class="px-4 py-4 font-bold text-teal-800">Payment #{{ $index + 1 }}</td>
+                                                                     <td class="px-4 py-4 text-center">
+                                                                         @if ($proofDisplayUrl)
+                                                                             <button type="button" onclick="openPaymentProofInBreakdown(@js($proofDisplayUrl))" class="btn-premium btn-view inline-flex items-center gap-2">
+                                                                                 <i data-lucide="eye" class="h-4 w-4"></i>
+                                                                                 View Proof
+                                                                             </button>
+                                                                         @else
+                                                                             <span class="text-[13.5px] text-slate-400 font-semibold">No Proof</span>
+                                                                         @endif
+                                                                     </td>
+                                                                     <td class="px-4 py-4 text-center">{{ $c['paid_at']?->format('d-M-y') ?? '' }}</td>
+                                                                     <td class="px-4 py-4 text-right font-black text-black bg-[#FFFF00]" style="font-size: 19.5px !important;">{{ number_format((float) $c['amount'], 2) }}</td>
+                                                                     <td class="px-4 py-4 text-center font-bold">{{ $c['or_number'] }}</td>
+                                                                 </tr>
+                                                             @endforeach
+                                                         </tbody>
+                                                     </table>
+                                                 </div>
+                                             </template>
+                                             @if (false)
                                              @foreach ($contributions as $index => $c)
                                                  @php
                                                      $cPayAmount = (float) $c['amount'];
@@ -168,17 +265,18 @@
                                                      $cPayDate = $c['paid_at']?->format('d-M-y') ?? '';
                                                      $runningBalanceSub -= $cPayAmount;
                                                  @endphp
-                                                 <tr class="breakdown-{{ $billing->id }} breakdown-row text-black font-semibold print:table-row hidden" style="background-color: #ffffff !important; font-size: 19.5px !important; border-left: 4px solid #0d9488 !important;">
+                                                 <tr class="hidden" style="display: none !important;">
                                                      <td class="px-3 py-2 pl-6 font-bold text-teal-800">Payment #{{ $index + 1 }}</td>
                                                      <td class="px-3 py-2 text-center font-bold">
                                                         @php
-                                                            $proofUrl = $c['receipt_url'] ?? $account->applicant?->payment?->receipt_url ?? 'receipts/test_payment_proof.png';
+                                                            $proofUrl = $c['receipt_url'] ?? $account->applicant?->payment?->receipt_url;
+                                                            $proofDisplayUrl = \App\Support\EnrollmentStorage::url($proofUrl);
                                                         @endphp
-                                                        @if ($proofUrl)
-                                                            <a href="{{ asset('storage/' . $proofUrl) }}" target="_blank" class="inline-flex items-center gap-1.5 text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-200 hover:border-teal-400 rounded-lg px-2.5 py-1 transition-all select-none print:hidden shadow-sm" style="font-size: 15.5px !important;">
+                                                        @if ($proofDisplayUrl)
+                                                            <button type="button" onclick="openPaymentProofInBreakdown(@js($proofDisplayUrl))" class="inline-flex items-center gap-1.5 text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 border border-teal-200 hover:border-teal-400 rounded-lg px-2.5 py-1 transition-all select-none print:hidden shadow-sm" style="font-size: 15.5px !important;">
                                                                 <i data-lucide="eye" class="h-4 w-4" style="stroke-width: 2.5;"></i>
                                                                 <span>View Proof</span>
-                                                            </a>
+                                                            </button>
                                                             <span class="hidden print:inline text-xs font-semibold italic text-slate-400">Viewed online</span>
                                                         @else
                                                             <span class="italic text-slate-400 font-semibold">Breakdown</span>
@@ -193,11 +291,12 @@
                                                      <td class="px-3 py-2 text-right font-bold text-slate-400">—</td>
                                                  </tr>
                                              @endforeach
+                                             @endif
                                          @endif
 
-                                         <!-- Main Month Row (Rendered BELOW the breakdown rows) -->
-                                         @if (count($contributions) > 1)
-                                             <tr class="bg-sage-row text-black font-semibold cursor-pointer hover:bg-[#e2ebe9] transition-colors select-none" onclick="toggleSingleBreakdown('breakdown-{{ $billing->id }}')">
+                                         <!-- Main Month Row -->
+                                         @if (count($contributions) > 0)
+                                             <tr class="bg-sage-row text-black font-semibold cursor-pointer hover:bg-[#e2ebe9] transition-colors select-none" onclick="openPaymentBreakdownModal('payment-breakdown-template-{{ $billing->id }}', '{{ $billing->month_name }}')">
                                          @else
                                              <tr class="bg-sage-row text-black font-semibold">
                                          @endif
@@ -210,7 +309,7 @@
                                              </td>
                                              <td class="px-3 py-2 text-center font-bold">{{ $payOr }}</td>
                                              <td class="px-3 py-2 text-right font-bold">
-                                                 @if ($isBillingDueOrPassed)
+                                                 @if ($shouldShowRunningBalance)
                                                      {{ number_format($runningBalance, 2) }}
                                                  @endif
                                              </td>

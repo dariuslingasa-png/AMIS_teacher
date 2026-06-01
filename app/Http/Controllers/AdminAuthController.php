@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\AdminAuditLog;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -17,13 +17,14 @@ class AdminAuthController extends Controller
         if (Auth::check() && Auth::user()->hasAdminPortalAccess()) {
             return redirect()->route('admin.dashboard');
         }
+
         return view('auth.login');
     }
 
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email'    => 'required|email',
+            'email' => 'required|email',
             'password' => 'required|string',
         ]);
 
@@ -36,12 +37,14 @@ class AdminAuthController extends Controller
             if (! $user->hasAdminPortalAccess()) {
                 $this->audit($request, 'login_denied', $user, false, 'User does not have admin portal access.');
                 Auth::logout();
+
                 return back()->withErrors(['email' => 'Access denied. Admin portal accounts only.']);
             }
 
             if (($user->account_status ?? 'verified') !== 'verified') {
                 $this->audit($request, 'login_denied', $user, false, 'Account is not verified.');
                 Auth::logout();
+
                 return back()->withErrors(['email' => 'Account is not verified. Please contact the system administrator.']);
             }
 
@@ -59,20 +62,25 @@ class AdminAuthController extends Controller
 
     public function microsoftRedirect()
     {
-        $tenantId    = config('services.microsoft.tenant_id');
-        $clientId    = config('services.microsoft.client_id');
+        $tenantId = config('services.microsoft.tenant_id');
+        $clientId = config('services.microsoft.client_id');
         $redirectUri = config('services.microsoft.redirect_uri');
-        $state       = bin2hex(random_bytes(16));
 
+        if (blank($tenantId) || blank($clientId) || blank($redirectUri)) {
+            return redirect()->route('admin.login')
+                ->withErrors(['email' => 'Microsoft sign-in is not configured.']);
+        }
+
+        $state = bin2hex(random_bytes(16));
         session(['ms_oauth_state' => $state]);
 
         $params = http_build_query([
-            'client_id'     => $clientId,
+            'client_id' => $clientId,
             'response_type' => 'code',
-            'redirect_uri'  => $redirectUri,
+            'redirect_uri' => $redirectUri,
             'response_mode' => 'query',
-            'scope'         => 'openid profile email offline_access https://graph.microsoft.com/.default',
-            'state'         => $state,
+            'scope' => 'openid profile email offline_access https://graph.microsoft.com/.default',
+            'state' => $state,
         ]);
 
         return redirect("https://login.microsoftonline.com/{$tenantId}/oauth2/v2.0/authorize?{$params}");
@@ -80,81 +88,72 @@ class AdminAuthController extends Controller
 
     public function microsoftCallback(Request $request)
     {
-        // Validate state
-        if ($request->state !== session('ms_oauth_state')) {
+        $state = session('ms_oauth_state');
+        session()->forget('ms_oauth_state');
+
+        if (blank($state) || ! hash_equals((string) $state, (string) $request->state)) {
             return redirect()->route('admin.login')->withErrors(['email' => 'Invalid OAuth state. Please try again.']);
         }
 
         if ($request->has('error')) {
-            return redirect()->route('admin.login')->withErrors(['email' => 'Microsoft sign-in failed: ' . $request->error_description]);
+            return redirect()->route('admin.login')->withErrors(['email' => 'Microsoft sign-in failed.']);
         }
 
-        $tenantId    = config('services.microsoft.tenant_id');
-        $clientId    = config('services.microsoft.client_id');
+        $tenantId = config('services.microsoft.tenant_id');
+        $clientId = config('services.microsoft.client_id');
         $clientSecret = config('services.microsoft.client_secret');
         $redirectUri = config('services.microsoft.redirect_uri');
 
-        // Exchange code for tokens
+        if (blank($tenantId) || blank($clientId) || blank($clientSecret) || blank($redirectUri)) {
+            return redirect()->route('admin.login')
+                ->withErrors(['email' => 'Microsoft sign-in is not configured.']);
+        }
+
         $response = \Illuminate\Support\Facades\Http::asForm()->post(
             "https://login.microsoftonline.com/{$tenantId}/oauth2/v2.0/token",
             [
-                'client_id'     => $clientId,
+                'client_id' => $clientId,
                 'client_secret' => $clientSecret,
-                'code'          => $request->code,
-                'redirect_uri'  => $redirectUri,
-                'grant_type'    => 'authorization_code',
+                'code' => $request->code,
+                'redirect_uri' => $redirectUri,
+                'grant_type' => 'authorization_code',
             ]
         );
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             return redirect()->route('admin.login')->withErrors(['email' => 'Failed to get Microsoft token.']);
         }
 
         $accessToken = $response->json('access_token');
-
-        // Get user info from Microsoft
         $userInfo = \Illuminate\Support\Facades\Http::withToken($accessToken)
             ->get('https://graph.microsoft.com/v1.0/me')
             ->json();
 
         $upn = $userInfo['userPrincipalName'] ?? $userInfo['mail'] ?? null;
 
-        if (!$upn) {
+        if (! $upn) {
             return redirect()->route('admin.login')->withErrors(['email' => 'Could not retrieve Microsoft account info.']);
         }
 
-        // Find matching admin user by email, or auto-create if @amis.edu.ph domain
-        $user = \App\Models\User::where('email', $upn)
-            ->orWhere('email', strtolower($upn))
-            ->first();
+        $email = strtolower($upn);
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
 
-        if (!$user) {
-            // Auto-create admin for any @amis.edu.ph account
-            if (!str_ends_with(strtolower($upn), '@amis.edu.ph')) {
-                return redirect()->route('admin.login')->withErrors(['email' => 'Only @amis.edu.ph accounts are allowed. Access denied.']);
-            }
-
-            $username = strtolower(explode('@', $upn)[0]);
-            $user = \App\Models\User::create([
-                'name'           => $userInfo['displayName'] ?? $username,
-                'email'          => strtolower($upn),
-                'username'       => $username,
-                'password'       => bcrypt(Str::random(32)),
-                'role'           => 'admin',
-                'account_status' => 'verified',
+        if (! $user || ! $user->hasAdminPortalAccess()) {
+            $this->audit($request, 'microsoft_login_denied', $user, false, 'Microsoft account is not an approved admin portal user.', [
+                'email' => $email,
             ]);
-        } elseif (! $user->hasAdminPortalAccess()) {
-            // Existing user but not admin — upgrade to admin if @amis.edu.ph
-            if (str_ends_with(strtolower($upn), '@amis.edu.ph')) {
-                $user->update(['role' => 'admin', 'account_status' => 'verified']);
-            } else {
-                return redirect()->route('admin.login')->withErrors(['email' => 'Access denied. Admin portal accounts only.']);
-            }
+
+            return redirect()->route('admin.login')->withErrors(['email' => 'Access denied. Admin portal accounts only.']);
+        }
+
+        if (($user->account_status ?? 'verified') !== 'verified') {
+            $this->audit($request, 'microsoft_login_denied', $user, false, 'Account is not verified.');
+
+            return redirect()->route('admin.login')->withErrors(['email' => 'Account is not verified. Please contact the system administrator.']);
         }
 
         Auth::login($user);
         $request->session()->regenerate();
-        session(['ms_access_token' => $accessToken]);
         $this->activateSingleSession($request, $user);
         $this->audit($request, 'microsoft_login_success', $user, true, 'Microsoft login successful.');
 
@@ -173,13 +172,13 @@ class AdminAuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('admin.login');
     }
 
     private function activateSingleSession(Request $request, User $user): void
     {
         $sessionId = $request->session()->getId();
-
         $deletedSessions = 0;
 
         if (config('session.driver') === 'database') {

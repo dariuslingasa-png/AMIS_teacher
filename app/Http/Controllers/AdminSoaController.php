@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Traits\PaymentHelperTrait;
+use App\Models\Payment;
 use App\Models\StudentAccount;
 use App\Models\StudentAccountPayment;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class AdminSoaController extends Controller
 {
@@ -129,7 +131,7 @@ class AdminSoaController extends Controller
 
     public function addPayment(Request $request, StudentAccount $account)
     {
-        $request->validate([
+        $validated = $request->validate([
             'amount'                 => 'required|numeric|min:1|max:' . $account->remaining_balance,
             'method'                 => 'required|in:cash,gcash,maya,bdo',
             'reference_no'           => 'nullable|string|max:100',
@@ -141,6 +143,20 @@ class AdminSoaController extends Controller
             'receipt'                => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
+        $orNumber = trim($validated['or_number']);
+        $orExistsForStudent = StudentAccountPayment::where('student_id', $account->student_id)
+            ->whereRaw('LOWER(or_number) = ?', [mb_strtolower($orNumber)])
+            ->exists();
+        $orExistsOnEnrollmentPayment = Payment::where('enrollment_applicant_id', $account->enrollment_applicant_id)
+            ->whereRaw('LOWER(or_number) = ?', [mb_strtolower($orNumber)])
+            ->exists();
+
+        if ($orExistsForStudent || $orExistsOnEnrollmentPayment) {
+            throw ValidationException::withMessages([
+                'or_number' => 'This OR number already exists for this student.',
+            ]);
+        }
+
         $receiptPath = null;
         if ($request->hasFile('receipt')) {
             $receiptPath = $request->file('receipt')->store('receipts/soa/' . $account->student_id, 'public');
@@ -149,14 +165,14 @@ class AdminSoaController extends Controller
         \App\Models\StudentAccountPayment::create([
             'student_account_id'     => $account->id,
             'student_id'             => $account->student_id,
-            'soa_monthly_billing_id' => $request->soa_monthly_billing_id,
-            'method'                 => $request->method,
-            'reference_no'           => $request->reference_no,
-            'or_number'              => $request->or_number,
-            'checked_by'             => $request->checked_by,
-            'account_received'       => $request->account_received,
-            'amount'                 => $request->amount,
-            'remarks'                => $request->purpose ?: 'Tuition Fee',
+            'soa_monthly_billing_id' => $validated['soa_monthly_billing_id'] ?? null,
+            'method'                 => $validated['method'],
+            'reference_no'           => $validated['reference_no'] ?? null,
+            'or_number'              => $orNumber,
+            'checked_by'             => $validated['checked_by'] ?? null,
+            'account_received'       => $validated['account_received'] ?? null,
+            'amount'                 => $validated['amount'],
+            'remarks'                => $validated['purpose'] ?? 'Tuition Fee',
             'receipt_url'            => $receiptPath,
             'status'                 => 'verified',
             'verified_at'            => now(),
@@ -164,14 +180,14 @@ class AdminSoaController extends Controller
         ]);
 
         // Mark monthly billing as paid if linked
-        if ($request->soa_monthly_billing_id) {
-            \App\Models\SoaMonthlyBilling::find($request->soa_monthly_billing_id)
+        if (!empty($validated['soa_monthly_billing_id'])) {
+            \App\Models\SoaMonthlyBilling::find($validated['soa_monthly_billing_id'])
                 ?->update(['status' => 'paid', 'paid_at' => now()]);
         }
 
         // Recalculate SOA
         $account->recalculate();
 
-        return back()->with('success', 'Payment of PHP ' . number_format($request->amount, 2) . ' recorded successfully.');
+        return back()->with('success', 'Payment of PHP ' . number_format((float) $validated['amount'], 2) . ' recorded successfully.');
     }
 }

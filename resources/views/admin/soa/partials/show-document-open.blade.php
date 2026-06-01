@@ -1,4 +1,4 @@
-        <div class="grid gap-6 grid-cols-1 max-w-[900px] mx-auto print:max-w-none print:p-0">
+        <div class="grid gap-6 grid-cols-1 mx-auto print:max-w-none print:p-0">
             
             <!-- OFFICIAL STATEMENT OF ACCOUNT SHEET DOCUMENT -->
             <div class="bg-white p-8 border border-slate-300 shadow-md rounded-2xl print:border-0 print:shadow-none print:p-0 print-container">
