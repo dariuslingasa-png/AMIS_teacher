@@ -26,6 +26,18 @@
                         <i data-lucide="scroll-text" class="h-4 w-4"></i>
                         SOA
                     </a>
+                    <a href="{{ route('admin.finance.fees-manage') }}" class="inline-flex items-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white transition hover:bg-white/15">
+                        <i data-lucide="settings" class="h-4 w-4"></i>
+                        Manage Fees
+                    </a>
+                    <a href="{{ route('admin.finance.aging-report') }}" class="inline-flex items-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white transition hover:bg-white/15">
+                        <i data-lucide="clock" class="h-4 w-4"></i>
+                        Aging Report
+                    </a>
+                    <a href="{{ route('admin.finance.export-soa') }}" class="inline-flex items-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white transition hover:bg-white/15">
+                        <i data-lucide="download" class="h-4 w-4"></i>
+                        Export SOA
+                    </a>
                 </div>
             </div>
         </section>

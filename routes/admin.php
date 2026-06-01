@@ -87,6 +87,16 @@ Route::name('admin.')->group(function () {
         Route::patch('/payments/{payment}/verify', [AdminPaymentController::class, 'verify'])->name('payments.verify');
         Route::patch('/payments/{payment}/reject', [AdminPaymentController::class, 'reject'])->name('payments.reject');
 
+        Route::get('/finance/fees-manage', [\App\Http\Controllers\AdminFinanceController::class, 'feesIndex'])->name('finance.fees-manage');
+        Route::post('/finance/fees-manage', [\App\Http\Controllers\AdminFinanceController::class, 'feesStore'])->name('finance.fees-manage.store');
+        Route::delete('/finance/fees-manage/{fee}', [\App\Http\Controllers\AdminFinanceController::class, 'feesDestroy'])->name('finance.fees-manage.destroy');
+        Route::post('/finance/soa/{account}/adjust', [\App\Http\Controllers\AdminFinanceController::class, 'adjustFee'])->name('finance.soa.adjust');
+        Route::get('/finance/export-soa', [\App\Http\Controllers\AdminFinanceController::class, 'exportSoa'])->name('finance.export-soa');
+        Route::get('/finance/soa/{account}/export-family', [\App\Http\Controllers\AdminFinanceController::class, 'exportFamilyPayments'])->name('finance.export-family');
+        Route::get('/finance/receipt/{payment}', [\App\Http\Controllers\AdminFinanceController::class, 'printReceipt'])->name('finance.receipt');
+        Route::get('/finance/aging-report', [\App\Http\Controllers\AdminFinanceController::class, 'agingReport'])->name('finance.aging-report');
+        Route::post('/finance/soa/{account}/reminder', [\App\Http\Controllers\AdminFinanceController::class, 'sendReminder'])->name('finance.send-reminder');
+
         Route::get('/ms-sync', [AdminMsSyncController::class, 'index'])->name('ms-sync.index');
         Route::post('/ms-sync/cleanup-test', [AdminMsSyncController::class, 'cleanupTestAccounts'])->name('ms-sync.cleanup-test');
         Route::post('/ms-sync/cleanup-portal', [AdminMsSyncController::class, 'cleanupPortalTestData'])->name('ms-sync.cleanup-portal');

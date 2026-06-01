@@ -71,6 +71,11 @@
                                     @else
                                         <span class="text-[13.5px] text-slate-400 font-semibold">No Proof</span>
                                     @endif
+                                    @if (strtolower($payment->status) === 'verified')
+                                        <a href="{{ route('admin.finance.receipt', $payment) }}" target="_blank" class="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-900">
+                                            <i data-lucide="printer" class="h-3 w-3"></i> OR
+                                        </a>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
