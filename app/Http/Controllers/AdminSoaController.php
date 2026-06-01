@@ -15,7 +15,7 @@ class AdminSoaController extends Controller
 
     public function index(Request $request)
     {
-        $query = StudentAccount::with('student.applicant')->latest();
+        $query = StudentAccount::with(['student.applicant', 'applicant'])->latest();
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -95,7 +95,7 @@ class AdminSoaController extends Controller
 
     public function show(StudentAccount $account)
     {
-        $account->load('student.applicant.payment', 'monthlyBillings', 'payments');
+        $account->load('student.applicant.payment', 'applicant.payment', 'monthlyBillings', 'payments');
 
         $studentName = $account->student?->applicant?->full_name ?: ($account->applicant?->full_name ?: 'Student');
 
