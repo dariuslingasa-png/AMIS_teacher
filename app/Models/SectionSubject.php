@@ -18,4 +18,19 @@ class SectionSubject extends Model
     {
         return $this->belongsTo(Section::class);
     }
+
+    public function meetings()
+    {
+        return $this->hasMany(SubjectMeeting::class);
+    }
+
+    public function materials()
+    {
+        return $this->hasMany(LearningMaterial::class);
+    }
+
+    public function announcements()
+    {
+        return $this->hasMany(SubjectAnnouncement::class);
+    }
 }

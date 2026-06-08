@@ -68,15 +68,6 @@ class User extends Authenticatable
         ];
     }
 
-    public function enrollmentApplicant(): \Illuminate\Database\Eloquent\Relations\HasOne
-    {
-        return $this->hasOne(EnrollmentApplicant::class);
-    }
-
-    public function enrollmentApplicants(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(EnrollmentApplicant::class);
-    }
 
     public function hasAdminPortalAccess(): bool
     {
