@@ -6,17 +6,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class Subject extends Model
 {
-    protected $fillable = ['name', 'code', 'grade_level', 'school_year'];
+    protected $fillable = [
+        'name',
+        'code',
+        'description',
+        'status',
+        'archived_at',
+        'grade_level',
+        'school_year',
+    ];
 
-    public function msTeam()
+    protected function casts(): array
     {
-        return $this->hasOne(MsTeam::class);
-    }
-
-    public function students()
-    {
-        return $this->belongsToMany(Student::class, 'student_subjects')
-                    ->withPivot('school_year')
-                    ->withTimestamps();
+        return ['archived_at' => 'datetime'];
     }
 }

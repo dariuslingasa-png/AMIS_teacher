@@ -11,10 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo(fn () => route('student.login'));
+        $middleware->redirectGuestsTo(fn () => route('teacher.login'));
 
         $middleware->alias([
-            'student' => \App\Http\Middleware\StudentOnly::class,
+            'teacher' => \App\Http\Middleware\TeacherOnly::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

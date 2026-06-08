@@ -1,40 +1,37 @@
 <?php
 
-use App\Http\Controllers\StudentAuthController;
-use App\Http\Controllers\StudentAccountLinkController;
-use App\Http\Controllers\StudentPortalController;
-use App\Http\Controllers\StudentPaymentController;
+use App\Http\Controllers\TeacherAuthController;
+use App\Http\Controllers\TeacherPortalController;
 use Illuminate\Support\Facades\Route;
 
-// Redirect home to dashboard
-Route::get('/', function () {
-    return redirect()->route('student.dashboard');
-});
+Route::redirect('/', '/login');
 
-// Guest routes
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [StudentAuthController::class, 'showLogin'])->name('student.login');
-    Route::post('/login', [StudentAuthController::class, 'login'])
-        ->middleware('throttle:5,1')
-        ->name('student.login.store');
-    Route::get('/login/google/redirect', [StudentAuthController::class, 'redirectGoogle'])->name('student.login.google.redirect');
-    Route::get('/login/google/callback', [StudentAuthController::class, 'callbackGoogle'])->name('student.login.google.callback');
+    Route::get('/login', [TeacherAuthController::class, 'showLogin'])->name('teacher.login');
+    Route::post('/login', [TeacherAuthController::class, 'login'])->name('teacher.login.store');
+    Route::post('/login/change-password', [TeacherAuthController::class, 'changePassword'])->name('teacher.login.change-password.store');
+    Route::get('/auth/microsoft/teacher', [TeacherAuthController::class, 'redirectMicrosoft'])->name('teacher.login.microsoft.redirect');
+    Route::get('/auth/microsoft/teacher/callback', [TeacherAuthController::class, 'callbackMicrosoft'])->name('teacher.login.microsoft.callback');
 });
 
-// Authenticated Student routes
-Route::middleware(['auth', 'student'])->group(function () {
-    Route::post('/logout', [StudentAuthController::class, 'logout'])->name('student.logout');
-    Route::get('/dashboard', [StudentPortalController::class, 'dashboard'])->name('student.dashboard');
-    Route::get('/announcements', [StudentPortalController::class, 'announcements'])->name('student.announcements');
-    Route::get('/subjects', [StudentPortalController::class, 'subjects'])->name('student.subjects');
-    Route::get('/grades', [StudentPortalController::class, 'grades'])->name('student.grades');
-    Route::get('/profile', [StudentPortalController::class, 'profile'])->name('student.profile');
-    Route::get('/settings', [StudentPortalController::class, 'settings'])->name('student.settings');
-    Route::get('/settings/google/redirect', [StudentAccountLinkController::class, 'redirectGoogle'])->name('student.settings.google.redirect');
-    Route::get('/settings/google/callback', [StudentAccountLinkController::class, 'callbackGoogle'])->name('student.settings.google.callback');
-    Route::delete('/settings/google', [StudentAccountLinkController::class, 'unlinkGoogle'])->name('student.settings.google.unlink');
-    Route::get('/schedule', [StudentPortalController::class, 'schedule'])->name('student.schedule');
-    Route::get('/billing', [StudentPaymentController::class, 'billing'])->name('student.billing');
-    Route::get('/payment-history', [StudentPaymentController::class, 'history'])->name('student.payments.history');
-    Route::post('/billing/pay', [StudentPaymentController::class, 'submitPayment'])->name('student.billing.pay');
+Route::middleware('teacher')->group(function () {
+    Route::post('/logout', [TeacherAuthController::class, 'logout'])->name('teacher.logout');
+
+    Route::get('/dashboard', [TeacherPortalController::class, 'dashboard'])->name('teacher.dashboard');
+    Route::get('/subjects', [TeacherPortalController::class, 'subjects'])->name('teacher.subjects');
+    Route::post('/subjects', [TeacherPortalController::class, 'storeSubject'])->name('teacher.subjects.store');
+    Route::get('/subjects/{subject}', [TeacherPortalController::class, 'subjectWorkspace'])->name('teacher.subjects.workspace');
+    Route::post('/materials', [TeacherPortalController::class, 'storeMaterial'])->name('teacher.materials.store');
+
+    Route::get('/meetings', [TeacherPortalController::class, 'meetings'])->name('teacher.meetings');
+    Route::post('/meetings', [TeacherPortalController::class, 'storeMeeting'])->name('teacher.meetings.store');
+
+    Route::get('/grades', [TeacherPortalController::class, 'grades'])->name('teacher.grades');
+    Route::post('/grades/assessments', [TeacherPortalController::class, 'storeAssessment'])->name('teacher.assessments.store');
+    Route::post('/grades/scores', [TeacherPortalController::class, 'storeScores'])->name('teacher.grades.scores.store');
+
+    Route::get('/students', [TeacherPortalController::class, 'students'])->name('teacher.students');
+
+    Route::get('/announcements', [TeacherPortalController::class, 'announcements'])->name('teacher.announcements');
+    Route::post('/announcements', [TeacherPortalController::class, 'storeAnnouncement'])->name('teacher.announcements.store');
 });

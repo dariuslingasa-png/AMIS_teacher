@@ -50,6 +50,15 @@ return [
         'redirect_uri' => env('GOOGLE_REDIRECT_URI', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/settings/google/callback'),
     ],
 
+    'azure' => [
+        'client_id'            => env('AZURE_CLIENT_ID'),
+        'client_secret'        => env('AZURE_CLIENT_SECRET'),
+        'tenant_id'            => env('AZURE_TENANT_ID'),
+        'redirect_uri_teacher' => env('AZURE_REDIRECT_URI_TEACHER'),
+        'redirect_uri_student' => env('AZURE_REDIRECT_URI_STUDENT'),
+    ],
+
+
     'firebase' => [
         'project_id' => env('FIREBASE_PROJECT_ID'),
         'api_key' => env('FIREBASE_API_KEY'),
@@ -58,6 +67,9 @@ return [
 
     'enrollment_storage_url' => env('ENROLLMENT_STORAGE_URL'),
     'student_portal_url' => env('STUDENT_PORTAL_URL', env('APP_URL')),
+    'ebook' => [
+        'url' => env('EBOOK_PORTAL_URL', 'http://127.0.0.1:8003/books'),
+    ],
 
     'school' => [
         'year'                  => env('SCHOOL_YEAR', '2026-2027'),
