@@ -14,7 +14,8 @@ class TeacherPortalServiceTest extends TestCase
 {
     public function test_portal_service_exposes_subject_workspace_actions(): void
     {
-        $service = new TeacherPortalService();
+        $graphMock = $this->createMock(\App\Services\MicrosoftGraphService::class);
+        $service = new TeacherPortalService($graphMock);
 
         $this->assertTrue(method_exists($service, 'getPortalData'));
         $this->assertTrue(method_exists($service, 'workspace'));

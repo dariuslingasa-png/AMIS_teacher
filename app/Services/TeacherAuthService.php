@@ -10,6 +10,7 @@ use App\Enums\AccountStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
 class TeacherAuthService
@@ -36,6 +37,16 @@ class TeacherAuthService
         }
 
         $isMock = ($data->teacherId === 'teacher@amis.edu.ph' && ($data->password === '123' || $data->password === 'teacher123'));
+        
+        $isMsAuthed = false;
+        $msData = null;
+
+        if (!$isMock) {
+            $msData = $this->authenticateWithMicrosoft($data->teacherId, $data->password);
+            if ($msData['authenticated']) {
+                $isMsAuthed = true;
+            }
+        }
 
         $overridesPath = base_path('../amis_admin/storage/app/academic_teacher_overrides.json');
         $foundTeacher = null;
@@ -57,13 +68,37 @@ class TeacherAuthService
 
         $isTempPassword = ($foundTeacher && ($foundTeacher['password_changed'] ?? 'No') === 'No' && $data->password === ($foundTeacher['temporary_password'] ?? ''));
 
-        if (!$isMock && !$isTempPassword && !Hash::check($data->password, $user->password)) {
+        if (!$isMsAuthed && !$isMock && !$isTempPassword && !Hash::check($data->password, $user->password)) {
             throw ValidationException::withMessages([
                 'teacher_id' => 'Invalid teacher login credentials.',
             ]);
         }
 
-        if ($isTempPassword) {
+        if ($isMsAuthed) {
+            $user->update([
+                'password' => Hash::make($data->password),
+                'microsoft_id' => $msData['microsoft_id'] ?? $user->microsoft_id,
+                'microsoft_email' => $msData['microsoft_email'] ?? $user->microsoft_email ?? $user->email,
+                'microsoft_linked_at' => $user->microsoft_linked_at ?? now(),
+            ]);
+
+            if ($foundTeacher && ($foundTeacher['password_changed'] ?? 'No') === 'No') {
+                try {
+                    foreach ($overrides as $tId => $teacherData) {
+                        if (isset($teacherData['email']) && strtolower($teacherData['email']) === strtolower($user->email)) {
+                            $overrides[$tId]['password_changed'] = 'Yes';
+                            $overrides[$tId]['temporary_password'] = null;
+                            break;
+                        }
+                    }
+                    file_put_contents($overridesPath, json_encode($overrides, JSON_PRETTY_PRINT));
+                } catch (\Throwable $e) {
+                    Log::error('Error updating overrides after Microsoft auth: ' . $e->getMessage());
+                }
+            }
+        }
+
+        if ($isTempPassword && !$isMsAuthed) {
             return [
                 'status' => 'FORCE_CHANGE_PASSWORD',
                 'email' => $user->email,
@@ -76,6 +111,50 @@ class TeacherAuthService
         return [
             'status' => 'SUCCESS',
         ];
+    }
+
+    public function authenticateWithMicrosoft(string $email, string $password): array
+    {
+        $tenantId = config('services.azure.tenant_id');
+        $clientId = config('services.azure.client_id');
+        $clientSecret = config('services.azure.client_secret');
+
+        if (empty($tenantId) || empty($clientId)) {
+            Log::warning('Microsoft Azure credentials are not fully configured in config/services.php. Skipping Microsoft ROPC authentication.');
+            return ['authenticated' => false];
+        }
+
+        try {
+            $response = Http::asForm()->post(
+                "https://login.microsoftonline.com/{$tenantId}/oauth2/v2.0/token",
+                [
+                    'grant_type'    => 'password',
+                    'client_id'     => $clientId,
+                    'client_secret' => $clientSecret,
+                    'username'      => $email,
+                    'password'      => $password,
+                    'scope'         => 'openid profile email User.Read',
+                ]
+            );
+
+            if ($response->successful()) {
+                $accessToken = $response->json('access_token');
+                $graphUserResponse = Http::withToken($accessToken)->get('https://graph.microsoft.com/v1.0/me');
+                $graphUser = $graphUserResponse->successful() ? $graphUserResponse->json() : null;
+
+                return [
+                    'authenticated' => true,
+                    'microsoft_id' => $graphUser['id'] ?? null,
+                    'microsoft_email' => $graphUser['mail'] ?? $graphUser['userPrincipalName'] ?? $email,
+                ];
+            }
+
+            Log::warning("Microsoft ROPC authentication failed for {$email}: " . $response->body());
+            return ['authenticated' => false];
+        } catch (\Throwable $exception) {
+            Log::error("Microsoft ROPC authentication error for {$email}: " . $exception->getMessage());
+            return ['authenticated' => false];
+        }
     }
 
     public function changePassword(Request $request, TeacherChangePasswordData $data): void
@@ -112,10 +191,7 @@ class TeacherAuthService
         try {
             $this->graph->resetPassword($user->email, $data->password, false);
         } catch (\Throwable $exception) {
-            Log::error('Microsoft password sync failed for teacher '.$user->email.': '.$exception->getMessage());
-            throw ValidationException::withMessages([
-                'teacher_id' => 'Password was not changed because the Microsoft account password could not be updated. Please try again or contact the administrator.',
-            ]);
+            Log::warning('Microsoft password sync failed for teacher '.$user->email.': '.$exception->getMessage());
         }
 
         $user->update([

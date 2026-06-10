@@ -6,7 +6,7 @@
     $cleanName = preg_replace('/^(teacher|ust\.|ustadz\.?|ustadh\.?|sir\.?|ma\'am\.?|maam\.?|ms\.?|mrs\.?|mr\.?)\s+/i', '', trim($teacherName));
     $firstName = explode(' ', $cleanName)[0];
     $cards = [
-        ['My Subjects', $subjects->count(), 'book-open-check', 'green'],
+        ['Classroom Workspaces', $subjects->count(), 'book-open-check', 'green'],
         ['Upcoming Meetings', $meetings->whereNotIn('status', ['Completed'])->count(), 'video', 'blue'],
         ['Recent Announcements', $announcements->count(), 'megaphone', 'violet'],
         ['Student Count', $students->count(), 'users-round', 'violet'],
@@ -27,12 +27,14 @@
             </span>
         </div>
         <h2 class="dash-welcome-title">Your Teaching Dashboard</h2>
-        <p class="dash-welcome-sub">Manage subjects, schedule meetings, track grades, and keep your students informed — all in one place.</p>
+        <p class="dash-welcome-sub">Manage classroom workspaces, schedule meetings, track grades, and keep your students informed — all in one place.</p>
     </div>
-    <div class="dash-welcome-actions">
-        <a href="{{ route('teacher.meetings') }}" class="teacher-primary-btn"><i data-lucide="video"></i> Create Meeting</a>
-        <a href="{{ route('teacher.grades') }}" class="teacher-light-btn"><i data-lucide="edit-3"></i> Gradebook</a>
-    </div>
+    @if($subjects->isNotEmpty())
+        <div class="dash-welcome-actions">
+            <a href="{{ route('teacher.meetings') }}" class="teacher-primary-btn"><i data-lucide="video"></i> Create Meeting</a>
+            <a href="{{ route('teacher.grades') }}" class="teacher-light-btn"><i data-lucide="edit-3"></i> Gradebook</a>
+        </div>
+    @endif
     <img src="{{ asset('images/school_elements_bg.png') }}" class="dash-welcome-pattern" alt="School elements pattern">
 </section>
 
@@ -40,16 +42,18 @@
 <section class="dash-actions">
     <a href="{{ route('teacher.subjects') }}" class="dash-action dash-action-subjects">
         <span class="dash-action-icon"><i data-lucide="book-open-check"></i></span>
-        <span class="dash-action-text"><strong>Manage Subjects</strong><span>Add or view subjects</span></span>
+        <span class="dash-action-text"><strong>Classroom Workspace</strong><span>Add or view classroom workspaces</span></span>
     </a>
-    <a href="{{ route('teacher.meetings') }}" class="dash-action dash-action-meetings">
-        <span class="dash-action-icon"><i data-lucide="video"></i></span>
-        <span class="dash-action-text"><strong>Schedule Meeting</strong><span>Create class meetings</span></span>
-    </a>
-    <a href="{{ route('teacher.announcements') }}" class="dash-action dash-action-announcements">
-        <span class="dash-action-icon"><i data-lucide="megaphone"></i></span>
-        <span class="dash-action-text"><strong>Post Update</strong><span>Notify your students</span></span>
-    </a>
+    @if($subjects->isNotEmpty())
+        <a href="{{ route('teacher.meetings') }}" class="dash-action dash-action-meetings">
+            <span class="dash-action-icon"><i data-lucide="video"></i></span>
+            <span class="dash-action-text"><strong>Schedule Meeting</strong><span>Create class meetings</span></span>
+        </a>
+        <a href="{{ route('teacher.announcements') }}" class="dash-action dash-action-announcements">
+            <span class="dash-action-icon"><i data-lucide="megaphone"></i></span>
+            <span class="dash-action-text"><strong>Post Update</strong><span>Notify your students</span></span>
+        </a>
+    @endif
 </section>
 
 {{-- Stats Grid --}}
@@ -71,8 +75,8 @@
         {{-- Subjects Panel --}}
         <div class="dash-panel">
             <div class="dash-panel-header">
-                <h2>Subject Load</h2>
-                <a href="{{ route('teacher.subjects') }}" class="dash-panel-link">{{ $subjects->count() }} subjects →</a>
+                <h2>Classroom Workspaces</h2>
+                <a href="{{ route('teacher.subjects') }}" class="dash-panel-link">{{ $subjects->count() }} workspaces →</a>
             </div>
             <div class="dash-subject-list">
                 @forelse($subjects->take(5) as $subject)
@@ -84,9 +88,10 @@
                         </span>
                     </a>
                 @empty
-                    <div class="dash-empty">
-                        <i data-lucide="book-open"></i>
-                        <p>No subjects assigned yet</p>
+                    <div class="dash-empty" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 32px 16px;">
+                        <i data-lucide="book-open" style="width: 32px; height: 32px; color: #10b981; stroke-width: 1.5;"></i>
+                        <h4 style="font-size: 0.95rem; font-weight: 600; color: #e2e8f0; margin: 0;">Preparing Academic Load</h4>
+                        <p style="font-size: 0.8rem; color: #94a3b8; text-align: center; max-width: 300px; margin: 0; line-height: 1.4;">Please wait for the administrator in the Admin Portal to assign subjects to your account first.</p>
                     </div>
                 @endforelse
             </div>
@@ -110,9 +115,10 @@
                         <span class="dash-timeline-time">{{ \Illuminate\Support\Str::of($meeting['date'])->substr(5) }} · {{ $meeting['time'] }}</span>
                     </div>
                 @empty
-                    <div class="dash-empty">
-                        <i data-lucide="calendar-off"></i>
-                        <p>No meetings scheduled</p>
+                    <div class="dash-empty" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 32px 16px;">
+                        <i data-lucide="calendar-off" style="width: 32px; height: 32px; color: #10b981; stroke-width: 1.5;"></i>
+                        <h4 style="font-size: 0.95rem; font-weight: 600; color: #e2e8f0; margin: 0;">Preparing Academic Load</h4>
+                        <p style="font-size: 0.8rem; color: #94a3b8; text-align: center; max-width: 300px; margin: 0; line-height: 1.4;">Please wait for the administrator in the Admin Portal to assign subjects to your account first.</p>
                     </div>
                 @endforelse
             </div>
@@ -127,7 +133,7 @@
             <h3>{{ session('teacher_name', $teacherName) }}</h3>
             <p>{{ session('teacher_dept') }}</p>
             <div class="dash-profile-stats">
-                <div class="dash-profile-stat"><strong>{{ $subjects->count() }}</strong><span>Subjects</span></div>
+                <div class="dash-profile-stat"><strong>{{ $subjects->count() }}</strong><span>Workspaces</span></div>
                 <div class="dash-profile-stat"><strong>{{ $students->count() }}</strong><span>Students</span></div>
                 <div class="dash-profile-stat"><strong>{{ $meetings->count() }}</strong><span>Meetings</span></div>
             </div>

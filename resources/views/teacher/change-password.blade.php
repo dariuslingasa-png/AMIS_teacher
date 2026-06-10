@@ -13,7 +13,7 @@
 </head>
 <body class="teacher-login-body">
     <main class="teacher-login">
-        <section class="teacher-login-panel">
+        <section class="teacher-login-panel" style="max-width: 480px; margin: 0 auto;">
             <div class="teacher-login-brand">
                 <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS">
                 <div>

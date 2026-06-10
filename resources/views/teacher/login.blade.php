@@ -1,7 +1,4 @@
 <!DOCTYPE html>
-@php
-    $microsoftConfigured = filled(config('services.azure.client_id')) && filled(config('services.azure.client_secret'));
-@endphp
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
@@ -44,40 +41,41 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('teacher.login.store') }}" class="teacher-form">
-                    @csrf
-                    <label>
-                        <span>Teacher Email</span>
-                        <input name="teacher_id" value="{{ old('teacher_id', 'teacher@amis.edu.ph') }}" required autofocus>
-                    </label>
-                    <label>
-                        <span>Password</span>
-                        <input name="password" type="password" value="teacher123" required>
-                    </label>
-                    <button type="submit" class="teacher-primary-btn" style="width:100%;">
-                        <i data-lucide="log-in"></i> Sign In
-                    </button>
-                </form>
-
-                <div class="teacher-divider">or continue with</div>
-
-                @if($microsoftConfigured)
-                    <a href="{{ route('teacher.login.microsoft.redirect') }}" class="teacher-outline-btn" style="width:100%;display:flex;">
-                        <svg style="width:16px;height:16px;" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M0 0h11v11H0z" fill="#f25022"/><path d="M12 0h11v11H12z" fill="#7fba00"/>
-                            <path d="M0 12h11v11H0z" fill="#00a4ef"/><path d="M12 12h11v11H12z" fill="#ffb900"/>
+                <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 24px;">
+                    <a href="{{ route('teacher.login.microsoft.redirect') }}" style="display: flex; align-items: center; justify-content: center; gap: 12px; height: 50px; border-radius: 8px; background: #2f2f2f; color: #fff; text-decoration: none; font-size: 15px; font-weight: 600; transition: background 140ms var(--ease); box-shadow: var(--shadow-sm);" onmouseover="this.style.background='#1f1f1f'" onmouseout="this.style.background='#2f2f2f'">
+                        <svg viewBox="0 0 23 23" style="width: 20px; height: 20px;">
+                            <path fill="#f25022" d="M1 1h10v10H1z"/>
+                            <path fill="#7fba00" d="M12 1h10v10H12z"/>
+                            <path fill="#00a4ef" d="M1 12h10v10H1z"/>
+                            <path fill="#ffb900" d="M12 12h10v10H12z"/>
                         </svg>
                         Sign in with Microsoft
                     </a>
-                @else
-                    <button type="button" disabled class="teacher-outline-btn" style="width:100%;display:flex;opacity:0.5;cursor:not-allowed;">
-                        <svg style="width:16px;height:16px;" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M0 0h11v11H0z" fill="#888"/><path d="M12 0h11v11H12z" fill="#888"/>
-                            <path d="M0 12h11v11H0z" fill="#888"/><path d="M12 12h11v11H12z" fill="#888"/>
-                        </svg>
-                        Microsoft sign-in not configured
-                    </button>
-                @endif
+                </div>
+
+                {{-- Collapsible Mock Developer Login --}}
+                <div style="margin-top: 32px; border-top: 1px dashed var(--s-border, #e2e8f0); padding-top: 16px; text-align: center;">
+                    <a href="#" onclick="document.getElementById('demo-login-form').style.display='block'; this.style.display='none'; return false;" style="font-size: 12px; color: var(--t-tertiary); text-decoration: none; font-weight: 600;">
+                        Use mock developer account
+                    </a>
+                    
+                    <form id="demo-login-form" method="POST" action="{{ route('teacher.login.store') }}" class="teacher-form" style="display: none; text-align: left; margin-top: 12px;">
+                        @csrf
+                        <label>
+                            <span>Teacher Email (Demo)</span>
+                            <input name="teacher_id" value="teacher@amis.edu.ph" required>
+                        </label>
+                        <label>
+                            <span>Password</span>
+                            <input name="password" type="password" value="teacher123" required>
+                        </label>
+                        <button type="submit" class="teacher-primary-btn" style="width:100%;">
+                            <i data-lucide="log-in"></i> Sign in with Demo
+                        </button>
+                    </form>
+                </div>
+
+
             </div>
         </section>
     </main>

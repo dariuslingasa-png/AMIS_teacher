@@ -7,8 +7,8 @@
             <h2>Meeting Board</h2>
             <span>{{ $meetings->count() }} records</span>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            @if($subjects->isNotEmpty())
+        @if($subjects->isNotEmpty())
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <form method="POST" action="{{ route('teacher.meetings.store') }}" style="margin:0;">
                     @csrf
                     <input type="hidden" name="subject_id" value="{{ $subjects->first()['id'] }}">
@@ -20,12 +20,13 @@
                     <input type="hidden" name="status" value="Live">
                     <button class="teacher-primary-btn"><i data-lucide="play"></i> Start Now</button>
                 </form>
-            @endif
-            <button type="button" class="teacher-primary-btn" data-teacher-modal-open aria-controls="meetingCreateModal">
-                <i data-lucide="plus"></i> Schedule
-            </button>
-        </div>
+                <button type="button" class="teacher-primary-btn" data-teacher-modal-open aria-controls="meetingCreateModal">
+                    <i data-lucide="plus"></i> Schedule
+                </button>
+            </div>
+        @endif
     </div>
+
 
     <div class="teacher-table-scroll">
         <table>
@@ -66,13 +67,23 @@
                 @empty
                     <tr>
                         <td colspan="7">
-                            <div class="dash-empty">
-                                <i data-lucide="video-off"></i>
-                                <p>No meetings created yet</p>
-                                <button type="button" class="teacher-primary-btn" data-teacher-modal-open aria-controls="meetingCreateModal">
-                                    <i data-lucide="plus"></i> Add Meeting
-                                </button>
-                            </div>
+                            @if($subjects->isEmpty())
+                                <div style="padding: 48px 24px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                                    <div style="background-color: rgba(16, 185, 129, 0.1); border-radius: 50%; padding: 16px; display: inline-flex; align-items: center; justify-content: center;">
+                                        <i data-lucide="video" style="width: 36px; height: 36px; color: #10b981; stroke-width: 1.5;"></i>
+                                    </div>
+                                    <h3 style="font-size: 1.15rem; font-weight: 600; color: #e2e8f0; margin: 0;">Preparing Academic Load</h3>
+                                    <p style="font-size: 0.875rem; color: #94a3b8; max-width: 400px; margin: 0; line-height: 1.5;">Please wait for the administrator in the Admin Portal to assign subjects to your account first.</p>
+                                </div>
+                            @else
+                                <div class="dash-empty">
+                                    <i data-lucide="video-off"></i>
+                                    <p>No meetings created yet</p>
+                                    <button type="button" class="teacher-primary-btn" data-teacher-modal-open aria-controls="meetingCreateModal">
+                                        <i data-lucide="plus"></i> Add Meeting
+                                    </button>
+                                </div>
+                            @endif
                         </td>
                     </tr>
                 @endforelse
@@ -81,6 +92,7 @@
     </div>
 </section>
 
+@if($subjects->isNotEmpty())
 <div id="meetingCreateModal" class="teacher-modal-backdrop" data-teacher-modal hidden>
     <div class="teacher-modal-card" role="dialog" aria-modal="true" aria-labelledby="meetingCreateTitle">
         <div class="teacher-panel-header">
@@ -175,4 +187,5 @@
         }
     })();
 </script>
+@endif
 @endsection

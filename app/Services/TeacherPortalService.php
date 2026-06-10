@@ -11,13 +11,22 @@ use App\Models\Subject;
 use App\Models\SubjectAnnouncement;
 use App\Models\SubjectMeeting;
 use App\Models\TeacherSubjectAssignment;
+use App\Models\Section;
+use App\Services\MicrosoftGraphService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class TeacherPortalService
 {
+    protected MicrosoftGraphService $graph;
+
+    public function __construct(MicrosoftGraphService $graph)
+    {
+        $this->graph = $graph;
+    }
     public function getPortalData(Request $request): array
     {
         $subjects = $this->subjectsFor($request);
@@ -156,11 +165,139 @@ class TeacherPortalService
         ]);
     }
 
+    public function createClassAndChannels(Request $request, array $data): void
+    {
+        $grade = $data['grade'];
+        $name = $data['name'] ?? null;
+        $gender = $data['gender'];
+        $mode = $data['mode'];
+        $shift = $mode === 'Flexible Online Learning' ? ($data['shift'] ?? null) : null;
+        $channels = $data['channels'] ?? [];
+
+        $teacherName = $request->session()->get('teacher_name', 'AMIS Teacher');
+        $teacherUpn = $request->session()->get('teacher_email');
+
+        // Construct team name
+        if ($grade === 'Kinder 1') {
+            $prefix = 'K1';
+        } elseif ($grade === 'Kinder 2') {
+            $prefix = 'K2';
+        } else {
+            $prefix = 'G' . str_replace('Grade ', '', $grade);
+        }
+
+        $shiftLabel = $shift ? ($shift === '1st Shift' ? '1st Shift' : '2nd Shift') : 'F2F';
+        $genderLabel = $gender === 'male' ? 'Boys' : 'Girls';
+        $namePart = $name ? " - {$name}" : '';
+        $teamName = "{$prefix}{$namePart} [{$genderLabel} & {$shiftLabel}]";
+
+        $msTeamId = null;
+        $msTeamUrl = null;
+
+        try {
+            $result = $this->graph->createTeam($teamName);
+            $msTeamId = $result['id'];
+            $msTeamUrl = "https://teams.microsoft.com/l/team/{$msTeamId}";
+
+            // Wait for team to be ready
+            $this->graph->waitForTeam($msTeamId);
+
+            // Post welcome card to General channel
+            $generalChannelId = $this->graph->getGeneralChannelId($msTeamId);
+            if ($generalChannelId) {
+                try {
+                    $this->graph->postWelcomeCard($msTeamId, $generalChannelId, [
+                        'grade_level'   => $grade,
+                        'learning_mode' => $mode,
+                        'shift'         => $shift,
+                        'gender'        => $gender,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::warning("Could not post welcome card to General channel: " . $e->getMessage());
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("Failed to create MS Team [{$teamName}]: " . $e->getMessage());
+            throw new \Exception('Failed to create Microsoft Team: ' . $e->getMessage());
+        }
+
+        // Save section in DB
+        $schoolYear = config('services.school.year', '2026-2027');
+
+        $section = Section::create([
+            'name'          => $name,
+            'grade_level'   => $grade,
+            'learning_mode' => $mode,
+            'shift'         => $shift,
+            'gender'        => $gender,
+            'school_year'   => $schoolYear,
+            'ms_team_id'    => $msTeamId,
+            'ms_team_url'   => $msTeamUrl,
+        ]);
+
+        // If teacher UPN is available, invite teacher as Team Owner
+        if ($msTeamId && $teacherUpn) {
+            try {
+                $this->graph->addTeamOwner($msTeamId, $teacherUpn);
+            } catch (\Exception $e) {
+                Log::warning("Could not add teacher [{$teacherUpn}] as Team Owner: " . $e->getMessage());
+            }
+        }
+
+        // Create subject/channels
+        $adminUpn = config('services.microsoft.admin_upn');
+        foreach ($channels as $channelName) {
+            $channelId = null;
+            if ($msTeamId) {
+                try {
+                    $channelResult = $this->graph->createPrivateChannel($msTeamId, $channelName, $adminUpn);
+                    $channelId = $channelResult['id'] ?? null;
+
+                    if ($channelId) {
+                        // Post welcome card to private channel
+                        try {
+                            $this->graph->postWelcomeCard($msTeamId, $channelId, [
+                                'grade_level'   => $grade,
+                                'learning_mode' => $mode,
+                                'shift'         => $shift,
+                                'gender'        => $gender,
+                                'subject'       => $channelName,
+                                'teacher'       => $teacherName,
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::warning("Could not post welcome card to channel [{$channelName}]: " . $e->getMessage());
+                        }
+
+                        // Invite teacher as Channel Owner
+                        if ($teacherUpn) {
+                            try {
+                                $this->graph->addChannelOwner($msTeamId, $channelId, $teacherUpn);
+                            } catch (\Exception $e) {
+                                Log::warning("Could not invite teacher [{$teacherUpn}] as channel owner: " . $e->getMessage());
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Failed to create MS private channel [{$channelName}]: " . $e->getMessage());
+                }
+            }
+
+            SectionSubject::create([
+                'section_id'    => $section->id,
+                'subject_name'  => $channelName,
+                'teacher_name'  => $teacherName,
+                'schedule'      => null,
+                'ms_channel_id' => $channelId,
+            ]);
+        }
+    }
+
     private function subjectsFor(Request $request): Collection
     {
         $teacherKey = $this->teacherKey($request);
         $teacherName = $request->session()->get('teacher_name');
         $teacherEmail = $request->session()->get('teacher_email');
+
         $assigned = TeacherSubjectAssignment::with('subject')
             ->where(function ($query) use ($teacherKey, $teacherEmail) {
                 $query->where('teacher_key', $teacherKey);
@@ -178,21 +315,46 @@ class TeacherPortalService
             })
             ->get();
 
-        return $assigned->flatMap(function (TeacherSubjectAssignment $assignment) use ($sectionSubjects) {
+        // Keep track of section subjects that we've already mapped via TeacherSubjectAssignment
+        $mappedSectionSubjectIds = collect();
+
+        $assignedSubjects = $assigned->flatMap(function (TeacherSubjectAssignment $assignment) use ($sectionSubjects, &$mappedSectionSubjectIds) {
             $matches = $sectionSubjects->filter(fn ($row) => Str::lower($row->subject_name) === Str::lower($assignment->subject?->name));
             if ($matches->isEmpty()) {
                 return [$this->catalogSubjectArray($assignment->subject)];
             }
 
-            return $matches->map(fn (SectionSubject $sectionSubject) => $this->sectionSubjectArray($sectionSubject, $assignment->subject));
-        })->filter()->unique('id')->values();
+            return $matches->map(function (SectionSubject $sectionSubject) use ($assignment, &$mappedSectionSubjectIds) {
+                $mappedSectionSubjectIds->push($sectionSubject->id);
+                return $this->sectionSubjectArray($sectionSubject, $assignment->subject);
+            });
+        })->filter();
+
+        // Find SectionSubjects where teacher matches, but they weren't matched in assignments
+        $unmappedSectionSubjects = $sectionSubjects->reject(fn ($row) => $mappedSectionSubjectIds->contains($row->id));
+
+        $directSubjects = $unmappedSectionSubjects->map(function (SectionSubject $sectionSubject) {
+            $subjectName = $sectionSubject->subject_name;
+            $gradeLevel = $sectionSubject->section?->grade_level;
+
+            $catalogSubject = Subject::where('name', $subjectName)
+                ->where('grade_level', $gradeLevel)
+                ->first();
+
+            if (!$catalogSubject) {
+                $catalogSubject = Subject::where('name', $subjectName)->first();
+            }
+
+            return $this->sectionSubjectArray($sectionSubject, $catalogSubject);
+        });
+
+        return $assignedSubjects->concat($directSubjects)->unique('id')->values();
     }
 
     private function studentsFor(Collection $subjects): Collection
     {
         return \App\Models\StudentSection::with('student.user')
             ->whereIn('section_id', $subjects->pluck('section_id')->filter()->unique())
-            ->whereIn('section_id', $sectionIds)
             ->get()
             ->map(fn ($row) => [
                 'id' => 'stu-'.$row->student_id,

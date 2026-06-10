@@ -34,4 +34,10 @@ Route::middleware('teacher')->group(function () {
 
     Route::get('/announcements', [TeacherPortalController::class, 'announcements'])->name('teacher.announcements');
     Route::post('/announcements', [TeacherPortalController::class, 'storeAnnouncement'])->name('teacher.announcements.store');
+
+    // Settings & Microsoft Link
+    Route::get('/settings', [TeacherPortalController::class, 'settings'])->name('teacher.settings');
+    Route::post('/settings/password', [TeacherPortalController::class, 'updatePassword'])->name('teacher.settings.password');
+    Route::get('/settings/microsoft/connect', [TeacherAuthController::class, 'connectMicrosoft'])->name('teacher.settings.microsoft.connect');
+    Route::post('/settings/microsoft/disconnect', [TeacherAuthController::class, 'disconnectMicrosoft'])->name('teacher.settings.microsoft.disconnect');
 });

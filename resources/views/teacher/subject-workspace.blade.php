@@ -16,7 +16,7 @@
         <p class="dash-welcome-sub">{{ $subject['grade'] ?: 'Catalog' }} · {{ $subject['section'] }} · {{ $subject['schedule'] ?: 'Unscheduled' }}</p>
     </div>
     <div class="dash-welcome-actions">
-        <a href="{{ route('teacher.subjects') }}" class="teacher-light-btn"><i data-lucide="arrow-left"></i> Subjects</a>
+        <a href="{{ route('teacher.subjects') }}" class="teacher-light-btn"><i data-lucide="arrow-left"></i> Classroom Workspace</a>
         <a href="{{ route('teacher.grades', ['subject' => $subject['id']]) }}" class="teacher-primary-btn"><i data-lucide="clipboard-list"></i> Gradebook</a>
     </div>
 </section>

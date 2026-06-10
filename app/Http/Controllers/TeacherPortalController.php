@@ -43,6 +43,10 @@ class TeacherPortalController extends Controller
 
         return view('teacher.subjects', [
             'subjects' => collect($data['subjects']),
+            'meetings' => collect($data['meetings']),
+            'materials' => collect($data['materials']),
+            'students' => collect($data['students']),
+            'announcements' => collect($data['announcements']),
         ]);
     }
 
@@ -53,7 +57,12 @@ class TeacherPortalController extends Controller
 
     public function storeSubject(StoreSubjectRequest $request)
     {
-        abort(403, 'Teachers can only access subjects assigned by admin.');
+        try {
+            $this->portalService->createClassAndChannels($request, $request->validated());
+            return redirect()->route('teacher.subjects')->with('success', 'Class and Channels successfully created and provisioned on MS Teams!');
+        } catch (\Exception $e) {
+            return redirect()->back()->withInput()->withErrors(['error' => $e->getMessage()]);
+        }
     }
 
     public function meetings(Request $request)
@@ -139,5 +148,36 @@ class TeacherPortalController extends Controller
         $this->portalService->storeAnnouncement($request, $dto);
 
         return redirect()->route('teacher.announcements')->with('success', 'Announcement posted.');
+    }
+
+    public function settings(Request $request)
+    {
+        $user = \App\Models\User::where('email', session('teacher_email'))->first();
+        if (!$user) {
+            abort(404, 'User not found.');
+        }
+
+        return view('teacher.settings', [
+            'user' => $user,
+        ]);
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:8|confirmed',
+        ]);
+
+        $user = \App\Models\User::where('email', session('teacher_email'))->first();
+        if (!$user || !\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password)) {
+            return back()->withErrors(['current_password' => 'Current password is incorrect.']);
+        }
+
+        $user->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($request->new_password),
+        ]);
+
+        return back()->with('success', 'Password changed successfully!');
     }
 }

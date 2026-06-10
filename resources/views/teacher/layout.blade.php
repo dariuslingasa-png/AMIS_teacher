@@ -27,12 +27,13 @@
             @php
                 $menu = [
                     ['route' => 'teacher.dashboard', 'icon' => 'gauge', 'label' => 'Dashboard', 'tone' => 'emerald'],
-                    ['route' => 'teacher.subjects', 'icon' => 'book-open', 'label' => 'Subjects', 'tone' => 'sky'],
+                    ['route' => 'teacher.subjects', 'icon' => 'book-open', 'label' => 'Classroom Workspace', 'tone' => 'sky'],
                     ['href' => config('services.ebook.url'), 'icon' => 'book-open-check', 'label' => 'eBook', 'tone' => 'indigo'],
                     ['route' => 'teacher.meetings', 'icon' => 'video', 'label' => 'Meetings', 'tone' => 'indigo'],
                     ['route' => 'teacher.grades', 'icon' => 'clipboard-list', 'label' => 'Gradebook', 'tone' => 'amber'],
                     ['route' => 'teacher.students', 'icon' => 'users', 'label' => 'Students', 'tone' => 'violet'],
                     ['route' => 'teacher.announcements', 'icon' => 'megaphone', 'label' => 'Announcements', 'tone' => 'rose'],
+                    ['route' => 'teacher.settings', 'icon' => 'settings', 'label' => 'Settings', 'tone' => 'indigo'],
                 ];
             @endphp
 
