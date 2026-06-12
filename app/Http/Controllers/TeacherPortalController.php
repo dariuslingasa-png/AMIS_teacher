@@ -39,14 +39,9 @@ class TeacherPortalController extends Controller
 
     public function subjects(Request $request)
     {
-        $data = $this->portalService->getPortalData($request);
-
-        return view('teacher.subjects', [
-            'subjects' => collect($data['subjects']),
-            'meetings' => collect($data['meetings']),
-            'materials' => collect($data['materials']),
-            'students' => collect($data['students']),
-            'announcements' => collect($data['announcements']),
+        return view('teacher.coming-soon', [
+            'heading' => 'Classroom Workspace',
+            'icon' => 'book-open'
         ]);
     }
 
@@ -67,11 +62,9 @@ class TeacherPortalController extends Controller
 
     public function meetings(Request $request)
     {
-        $data = $this->portalService->getPortalData($request);
-
-        return view('teacher.meetings', [
-            'subjects' => collect($data['subjects']),
-            'meetings' => collect($data['meetings']),
+        return view('teacher.coming-soon', [
+            'heading' => 'Meetings',
+            'icon' => 'video'
         ]);
     }
 
@@ -92,17 +85,9 @@ class TeacherPortalController extends Controller
 
     public function grades(Request $request)
     {
-        $data = $this->portalService->getPortalData($request);
-        $subjects = collect($data['subjects']);
-        $selectedSubjectId = $request->query('subject', $subjects->first()['id'] ?? null);
-
-        return view('teacher.grades', [
-            'subjects' => $subjects,
-            'selectedSubjectId' => $selectedSubjectId,
-            'selectedSubject' => $subjects->firstWhere('id', $selectedSubjectId),
-            'assessments' => collect($data['assessments'])->where('subject_id', $selectedSubjectId)->values(),
-            'students' => collect($data['students']),
-            'scores' => $data['scores'],
+        return view('teacher.coming-soon', [
+            'heading' => 'Gradebook',
+            'icon' => 'clipboard-list'
         ]);
     }
 
@@ -134,11 +119,9 @@ class TeacherPortalController extends Controller
 
     public function announcements(Request $request)
     {
-        $data = $this->portalService->getPortalData($request);
-
-        return view('teacher.announcements', [
-            'announcements' => collect($data['announcements']),
-            'subjects' => collect($data['subjects']),
+        return view('teacher.coming-soon', [
+            'heading' => 'Announcements',
+            'icon' => 'megaphone'
         ]);
     }
 
@@ -152,13 +135,9 @@ class TeacherPortalController extends Controller
 
     public function settings(Request $request)
     {
-        $user = \App\Models\User::where('email', session('teacher_email'))->first();
-        if (!$user) {
-            abort(404, 'User not found.');
-        }
-
-        return view('teacher.settings', [
-            'user' => $user,
+        return view('teacher.coming-soon', [
+            'heading' => 'Settings',
+            'icon' => 'settings'
         ]);
     }
 
@@ -179,5 +158,13 @@ class TeacherPortalController extends Controller
         ]);
 
         return back()->with('success', 'Password changed successfully!');
+    }
+
+    public function ebook(Request $request)
+    {
+        return view('teacher.coming-soon', [
+            'heading' => 'eBook',
+            'icon' => 'book-open-check'
+        ]);
     }
 }

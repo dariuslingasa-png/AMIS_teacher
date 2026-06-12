@@ -14,18 +14,8 @@
     ];
 @endphp
 
-{{-- Welcome Hero --}}
 <section class="dash-welcome">
     <div class="dash-welcome-body">
-        <div class="flex flex-wrap items-center gap-2 mb-3">
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider bg-slate-900 text-white rounded-full">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                {{ session('teacher_dept') }}
-            </span>
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white rounded-full">
-                Assalamualaikum, {{ $firstName }}
-            </span>
-        </div>
         <h2 class="dash-welcome-title">Your Teaching Dashboard</h2>
         <p class="dash-welcome-sub">Manage classroom workspaces, schedule meetings, track grades, and keep your students informed — all in one place.</p>
     </div>
@@ -37,6 +27,14 @@
     @endif
     <img src="{{ asset('images/school_elements_bg.png') }}" class="dash-welcome-pattern" alt="School elements pattern">
 </section>
+
+<div class="flex flex-col gap-0.5 mt-2 mb-6 px-1" style="font-family: var(--font-sans);">
+    <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+        <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; bg-color: #10b981; background-color: #10b981; box-shadow: 0 0 6px #10b981;"></span>
+        Assalamualaikum, {{ $firstName }}
+    </h3>
+    <p style="margin: 0 0 0 12px; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px;">{{ session('teacher_dept') }}</p>
+</div>
 
 {{-- Quick Actions --}}
 <section class="dash-actions">

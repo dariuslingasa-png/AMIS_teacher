@@ -16,7 +16,7 @@
         </label>
     </form>
 
-    <form method="POST" action="{{ route('teacher.assessments.store') }}" class="teacher-assessment-form">
+    <form method="POST" action="{{ route('teacher.assessments.store') }}" class="teacher-form teacher-assessment-form">
         @csrf
         <input type="hidden" name="subject_id" value="{{ $selectedSubjectId }}">
         <label style="margin-bottom:0;"><span>Assessment</span><input name="title" required placeholder="Quiz title"></label>

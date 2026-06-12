@@ -68,7 +68,12 @@ class TeacherAuthService
 
         $isTempPassword = ($foundTeacher && ($foundTeacher['password_changed'] ?? 'No') === 'No' && $data->password === ($foundTeacher['temporary_password'] ?? ''));
 
-        if (!$isMsAuthed && !$isMock && !$isTempPassword && !Hash::check($data->password, $user->password)) {
+        $isValid = false;
+        if ($isMsAuthed || $isMock || $isTempPassword || Hash::check($data->password, $user->password)) {
+            $isValid = true;
+        }
+
+        if (!$isValid) {
             throw ValidationException::withMessages([
                 'teacher_id' => 'Invalid teacher login credentials.',
             ]);
@@ -98,7 +103,9 @@ class TeacherAuthService
             }
         }
 
-        if ($isTempPassword && !$isMsAuthed) {
+        $needsPasswordChange = ($foundTeacher && ($foundTeacher['password_changed'] ?? 'No') === 'No');
+
+        if ($needsPasswordChange && !$isMsAuthed) {
             return [
                 'status' => 'FORCE_CHANGE_PASSWORD',
                 'email' => $user->email,

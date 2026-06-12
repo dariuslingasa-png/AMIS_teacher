@@ -39,9 +39,9 @@
                     <small>{{ $announcement['audience'] }}</small>
                 </article>
             @empty
-                <div style="padding:48px;text-align:center;color:var(--t-text-muted);">
-                    <i data-lucide="megaphone-off" style="width:40px;height:40px;margin-bottom:12px;"></i>
-                    <p style="margin:0;font-size:15px;font-weight:600;">No announcements posted yet</p>
+                <div class="dash-empty" style="padding: 48px 24px;">
+                    <i data-lucide="megaphone-off" style="color: #10b981;"></i>
+                    <p>No announcements posted yet</p>
                 </div>
             @endforelse
         </div>

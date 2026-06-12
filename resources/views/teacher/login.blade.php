@@ -41,8 +41,39 @@
                     </div>
                 @endif
 
-                <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 24px;">
-                    <a href="{{ route('teacher.login.microsoft.redirect') }}" style="display: flex; align-items: center; justify-content: center; gap: 12px; height: 50px; border-radius: 8px; background: #2f2f2f; color: #fff; text-decoration: none; font-size: 15px; font-weight: 600; transition: background 140ms var(--ease); box-shadow: var(--shadow-sm);" onmouseover="this.style.background='#1f1f1f'" onmouseout="this.style.background='#2f2f2f'">
+                <form method="POST" action="{{ route('teacher.login.store') }}" class="teacher-form" style="margin-top: 24px;">
+                    @csrf
+                    <label>
+                        <span>Teacher Email</span>
+                        <input name="teacher_id" type="text" value="{{ old('teacher_id', 'teacher@amis.edu.ph') }}" required autofocus placeholder="teacher@amis.edu.ph">
+                    </label>
+
+                    <label>
+                        <span>Portal Password</span>
+                        <input name="password" type="password" value="teacher123" required placeholder="Password">
+                    </label>
+
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0;">
+                        <label style="display: flex; flex-direction: row; align-items: center; gap: 8px; font-weight: 600; color: var(--t-secondary); font-size: 14px; cursor: pointer;">
+                            <input type="checkbox" name="remember" value="1" style="width: auto; margin: 0;">
+                            Remember me
+                        </label>
+                    </div>
+
+                    <button type="submit" class="teacher-primary-btn" style="width: 100%;">
+                        <i data-lucide="log-in"></i> Sign In
+                    </button>
+                </form>
+
+                <div class="teacher-divider" style="display: flex; align-items: center; gap: 14px; margin: 20px 0; font-size: 10.5px; font-weight: 650; color: var(--t-tertiary); text-transform: uppercase;">
+                    <style>
+                        .teacher-divider::before, .teacher-divider::after { content: ""; flex: 1; height: 1px; background: var(--s-border, #e9ebee); }
+                    </style>
+                    or continue with
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <a href="{{ route('teacher.login.microsoft.redirect') }}" style="display: flex; align-items: center; justify-content: center; gap: 12px; height: 50px; border-radius: 8px; background: #059669; color: #fff; text-decoration: none; font-size: 15px; font-weight: 600; transition: background 140ms var(--ease); box-shadow: var(--shadow-sm);" onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#059669'">
                         <svg viewBox="0 0 23 23" style="width: 20px; height: 20px;">
                             <path fill="#f25022" d="M1 1h10v10H1z"/>
                             <path fill="#7fba00" d="M12 1h10v10H12z"/>
@@ -51,28 +82,6 @@
                         </svg>
                         Sign in with Microsoft
                     </a>
-                </div>
-
-                {{-- Collapsible Mock Developer Login --}}
-                <div style="margin-top: 32px; border-top: 1px dashed var(--s-border, #e2e8f0); padding-top: 16px; text-align: center;">
-                    <a href="#" onclick="document.getElementById('demo-login-form').style.display='block'; this.style.display='none'; return false;" style="font-size: 12px; color: var(--t-tertiary); text-decoration: none; font-weight: 600;">
-                        Use mock developer account
-                    </a>
-                    
-                    <form id="demo-login-form" method="POST" action="{{ route('teacher.login.store') }}" class="teacher-form" style="display: none; text-align: left; margin-top: 12px;">
-                        @csrf
-                        <label>
-                            <span>Teacher Email (Demo)</span>
-                            <input name="teacher_id" value="teacher@amis.edu.ph" required>
-                        </label>
-                        <label>
-                            <span>Password</span>
-                            <input name="password" type="password" value="teacher123" required>
-                        </label>
-                        <button type="submit" class="teacher-primary-btn" style="width:100%;">
-                            <i data-lucide="log-in"></i> Sign in with Demo
-                        </button>
-                    </form>
                 </div>
 
 

@@ -6,10 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model
 {
-    protected $fillable = ['user_id', 'student_number', 'grade_level', 'school_year', 'section'];
+    protected $fillable = ['user_id', 'enrollment_applicant_id', 'student_number', 'grade_level', 'school_year', 'section'];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function applicant()
+    {
+        return $this->belongsTo(EnrollmentApplicant::class, 'enrollment_applicant_id');
     }
 }

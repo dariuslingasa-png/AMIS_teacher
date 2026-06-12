@@ -58,7 +58,8 @@ class TeacherPortalService
             ->get()
             ->map(fn (SubjectAnnouncement $announcement) => $this->announcementArray($announcement));
 
-        $students = $this->studentsFor($subjects);
+        $advisorySectionIds = $this->advisorySectionsFor($request);
+        $students = $this->studentsFor($subjects, $advisorySectionIds);
 
         return [
             'subjects' => $subjects->values()->all(),
@@ -351,10 +352,62 @@ class TeacherPortalService
         return $assignedSubjects->concat($directSubjects)->unique('id')->values();
     }
 
-    private function studentsFor(Collection $subjects): Collection
+    public function advisorySectionsFor(Request $request): Collection
     {
-        return \App\Models\StudentSection::with('student.user')
-            ->whereIn('section_id', $subjects->pluck('section_id')->filter()->unique())
+        $teacherKey = $this->teacherKey($request);
+        $teacherName = $request->session()->get('teacher_name');
+        $teacherEmail = $request->session()->get('teacher_email');
+
+        // 1. Get from database ClassAdvisoryAssignment
+        $dbSectionIds = \App\Models\ClassAdvisoryAssignment::where('status', 'active')
+            ->where(function ($query) use ($teacherKey, $teacherEmail, $teacherName) {
+                $query->where('teacher_key', $teacherKey);
+                if ($teacherEmail) {
+                    $query->orWhere('teacher_email', $teacherEmail);
+                }
+                if ($teacherName) {
+                    $query->orWhere('teacher_name', $teacherName);
+                }
+            })
+            ->pluck('section_id')
+            ->filter()
+            ->unique();
+
+        // 2. Get from config('class_advisories') configuration matching the teacher's name
+        $configSectionIds = collect();
+        if ($teacherName) {
+            $cleanTeacherName = trim(str_ireplace('TEACHER ', '', $teacherName));
+            
+            $allAdvisories = collect();
+            foreach (config('class_advisories', []) as $key => $rows) {
+                if (in_array($key, ['elementary', 'high_school'], true)) {
+                    $allAdvisories = $allAdvisories->concat($rows);
+                }
+            }
+            
+            $matchingAdvisoryGrades = $allAdvisories->filter(function ($adv) use ($cleanTeacherName) {
+                $advTeacher = trim(str_ireplace('TEACHER ', '', $adv['teacher'] ?? ''));
+                return str_contains(strtolower($advTeacher), strtolower($cleanTeacherName)) ||
+                       str_contains(strtolower($cleanTeacherName), strtolower($advTeacher));
+            })->pluck('grade_level')->unique();
+
+            if ($matchingAdvisoryGrades->isNotEmpty()) {
+                $configSectionIds = \App\Models\Section::whereIn('grade_level', $matchingAdvisoryGrades)
+                    ->pluck('id')
+                    ->unique();
+            }
+        }
+
+        return $dbSectionIds->concat($configSectionIds)->unique();
+    }
+
+    private function studentsFor(Collection $subjects, Collection $advisorySectionIds): Collection
+    {
+        $subjectSectionIds = $subjects->pluck('section_id')->filter()->unique();
+        $allSectionIds = $subjectSectionIds->concat($advisorySectionIds)->unique();
+
+        return \App\Models\StudentSection::with(['student.user', 'student.applicant'])
+            ->whereIn('section_id', $allSectionIds)
             ->get()
             ->map(fn ($row) => [
                 'id' => 'stu-'.$row->student_id,
@@ -363,6 +416,7 @@ class TeacherPortalService
                 'student_no' => $row->student?->student_number ?? 'N/A',
                 'grade' => $row->student?->grade_level ?? '',
                 'section' => $row->student?->section ?? '',
+                'photo_url' => \App\Support\EnrollmentStorage::url($row->student?->applicant?->photo_2x2_url),
             ]);
     }
 

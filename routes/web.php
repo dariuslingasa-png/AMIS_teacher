@@ -31,6 +31,7 @@ Route::middleware('teacher')->group(function () {
     Route::post('/grades/scores', [TeacherPortalController::class, 'storeScores'])->name('teacher.grades.scores.store');
 
     Route::get('/students', [TeacherPortalController::class, 'students'])->name('teacher.students');
+    Route::get('/ebook', [TeacherPortalController::class, 'ebook'])->name('teacher.ebook');
 
     Route::get('/announcements', [TeacherPortalController::class, 'announcements'])->name('teacher.announcements');
     Route::post('/announcements', [TeacherPortalController::class, 'storeAnnouncement'])->name('teacher.announcements.store');
