@@ -84,7 +84,12 @@
                         <span class="dash-subject-code">{{ $subject['code'] ?: substr($subject['name'] ?? 'SUB', 0, 3) }}</span>
                         <span class="dash-subject-info">
                             <strong>{{ $subject['name'] }}</strong>
-                            <span>{{ $subject['grade'] }} · {{ $subject['section'] }} · {{ $subject['schedule'] ?? 'Unscheduled' }}</span>
+                            <span>
+                                {{ $subject['grade'] }} · {{ $subject['section'] }} · {{ $subject['schedule'] ?? 'Unscheduled' }}
+                                @if(!empty($subject['advisor']))
+                                    · <span style="color: #64748b;">Advisor: {{ $subject['advisor'] }}</span>
+                                @endif
+                            </span>
                         </span>
                     </a>
                 @empty

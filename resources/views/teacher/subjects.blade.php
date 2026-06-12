@@ -137,6 +137,12 @@
                         <i data-lucide="calendar" style="width: 14px; height: 14px; color: #8b949e;"></i>
                         <span>{{ $subject['schedule'] ?: 'Unscheduled' }}</span>
                     </div>
+                    @if(!empty($subject['advisor']))
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <i data-lucide="user-check" style="width: 14px; height: 14px; color: #8b949e;"></i>
+                            <span>Advisor: <span style="font-weight: 600; color: #1f2328;">{{ $subject['advisor'] }}</span></span>
+                        </div>
+                    @endif
                 </div>
             </div>
 

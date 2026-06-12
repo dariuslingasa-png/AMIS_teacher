@@ -382,6 +382,7 @@ class TeacherPortalService
             'schedule' => null,
             'room' => null,
             'mode' => 'Assigned',
+            'advisor' => null,
         ];
     }
 
@@ -399,6 +400,7 @@ class TeacherPortalService
             'schedule' => $row->schedule,
             'room' => null,
             'mode' => $row->section?->learning_mode ?? 'F2F',
+            'advisor' => $row->section?->grade_advisor?->teacher_name ?? null,
         ];
     }
 
