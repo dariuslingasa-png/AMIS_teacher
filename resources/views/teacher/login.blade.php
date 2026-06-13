@@ -45,12 +45,12 @@
                     @csrf
                     <label>
                         <span>Teacher Email</span>
-                        <input name="teacher_id" type="text" value="{{ old('teacher_id', 'teacher@amis.edu.ph') }}" required autofocus placeholder="teacher@amis.edu.ph">
+                        <input name="teacher_id" type="text" value="{{ old('teacher_id') }}" required autofocus placeholder="teacher@amis.edu.ph">
                     </label>
 
                     <label>
                         <span>Portal Password</span>
-                        <input name="password" type="password" value="teacher123" required placeholder="Password">
+                        <input name="password" type="password" required placeholder="Password">
                     </label>
 
                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0;">
