@@ -53,12 +53,6 @@
                         <input name="password" type="password" required placeholder="Password">
                     </label>
 
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0;">
-                        <label style="display: flex; flex-direction: row; align-items: center; gap: 8px; font-weight: 600; color: var(--t-secondary); font-size: 14px; cursor: pointer;">
-                            <input type="checkbox" name="remember" value="1" style="width: auto; margin: 0;">
-                            Remember me
-                        </label>
-                    </div>
 
                     <button type="submit" class="teacher-primary-btn" style="width: 100%;">
                         <i data-lucide="log-in"></i> Sign In
