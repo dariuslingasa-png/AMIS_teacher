@@ -2,15 +2,15 @@
 
 namespace App\Services;
 
-use App\DTOs\TeacherLoginData;
 use App\DTOs\TeacherChangePasswordData;
-use App\Models\User;
-use App\Models\AdminAuditLog;
+use App\DTOs\TeacherLoginData;
 use App\Enums\AccountStatus;
+use App\Models\AdminAuditLog;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class TeacherAuthService
@@ -27,8 +27,8 @@ class TeacherAuthService
         $user = User::where('email', $data->teacherId)->first();
 
         if (
-            !$user || 
-            $user->role !== 'teacher' || 
+            ! $user ||
+            $user->role !== 'teacher' ||
             ($user->account_status ?? AccountStatus::VERIFIED->value) !== AccountStatus::VERIFIED->value
         ) {
             throw ValidationException::withMessages([
@@ -37,11 +37,11 @@ class TeacherAuthService
         }
 
         $isMock = ($data->teacherId === 'teacher@amis.edu.ph' && ($data->password === '123' || $data->password === 'teacher123'));
-        
+
         $isMsAuthed = false;
         $msData = null;
 
-        if (!$isMock) {
+        if (! $isMock) {
             $msData = $this->authenticateWithMicrosoft($data->teacherId, $data->password);
             if ($msData['authenticated']) {
                 $isMsAuthed = true;
@@ -63,7 +63,7 @@ class TeacherAuthService
                 }
             }
         } catch (\Throwable $e) {
-            Log::error('Error reading teacher overrides file: ' . $e->getMessage());
+            Log::error('Error reading teacher overrides file: '.$e->getMessage());
         }
 
         $isTempPassword = ($foundTeacher && ($foundTeacher['password_changed'] ?? 'No') === 'No' && $data->password === ($foundTeacher['temporary_password'] ?? ''));
@@ -73,7 +73,7 @@ class TeacherAuthService
             $isValid = true;
         }
 
-        if (!$isValid) {
+        if (! $isValid) {
             throw ValidationException::withMessages([
                 'teacher_id' => 'Invalid teacher login credentials.',
             ]);
@@ -98,14 +98,14 @@ class TeacherAuthService
                     }
                     file_put_contents($overridesPath, json_encode($overrides, JSON_PRETTY_PRINT));
                 } catch (\Throwable $e) {
-                    Log::error('Error updating overrides after Microsoft auth: ' . $e->getMessage());
+                    Log::error('Error updating overrides after Microsoft auth: '.$e->getMessage());
                 }
             }
         }
 
         $needsPasswordChange = ($foundTeacher && ($foundTeacher['password_changed'] ?? 'No') === 'No');
 
-        if ($needsPasswordChange && !$isMsAuthed) {
+        if ($needsPasswordChange && ! $isMsAuthed) {
             return [
                 'status' => 'FORCE_CHANGE_PASSWORD',
                 'email' => $user->email,
@@ -128,6 +128,7 @@ class TeacherAuthService
 
         if (empty($tenantId) || empty($clientId)) {
             Log::warning('Microsoft Azure credentials are not fully configured in config/services.php. Skipping Microsoft ROPC authentication.');
+
             return ['authenticated' => false];
         }
 
@@ -135,12 +136,12 @@ class TeacherAuthService
             $response = Http::asForm()->post(
                 "https://login.microsoftonline.com/{$tenantId}/oauth2/v2.0/token",
                 [
-                    'grant_type'    => 'password',
-                    'client_id'     => $clientId,
+                    'grant_type' => 'password',
+                    'client_id' => $clientId,
                     'client_secret' => $clientSecret,
-                    'username'      => $email,
-                    'password'      => $password,
-                    'scope'         => 'openid profile email User.Read',
+                    'username' => $email,
+                    'password' => $password,
+                    'scope' => 'openid profile email User.Read',
                 ]
             );
 
@@ -156,10 +157,12 @@ class TeacherAuthService
                 ];
             }
 
-            Log::warning("Microsoft ROPC authentication failed for {$email}: " . $response->body());
+            Log::warning("Microsoft ROPC authentication failed for {$email}: ".$response->body());
+
             return ['authenticated' => false];
         } catch (\Throwable $exception) {
-            Log::error("Microsoft ROPC authentication error for {$email}: " . $exception->getMessage());
+            Log::error("Microsoft ROPC authentication error for {$email}: ".$exception->getMessage());
+
             return ['authenticated' => false];
         }
     }
@@ -167,7 +170,7 @@ class TeacherAuthService
     public function changePassword(Request $request, TeacherChangePasswordData $data): void
     {
         $user = User::where('email', $data->email)->first();
-        if (!$user || $user->role !== 'teacher') {
+        if (! $user || $user->role !== 'teacher') {
             throw ValidationException::withMessages([
                 'teacher_id' => 'Teacher account not found.',
             ]);
@@ -189,7 +192,7 @@ class TeacherAuthService
             }
         }
 
-        if (!$foundTeacher || ($foundTeacher['password_changed'] ?? 'No') !== 'No' || $data->tempPassword !== ($foundTeacher['temporary_password'] ?? '')) {
+        if (! $foundTeacher || ($foundTeacher['password_changed'] ?? 'No') !== 'No' || $data->tempPassword !== ($foundTeacher['temporary_password'] ?? '')) {
             throw ValidationException::withMessages([
                 'teacher_id' => 'Invalid temporary password session. Please log in again.',
             ]);
@@ -212,7 +215,7 @@ class TeacherAuthService
         try {
             AdminAuditLog::record('teacher_password_changed_onboarding', true, "Teacher {$user->email} changed password successfully during initial login");
         } catch (\Throwable $e) {
-            Log::error('Failed to log admin audit for teacher password change: ' . $e->getMessage());
+            Log::error('Failed to log admin audit for teacher password change: '.$e->getMessage());
         }
 
         $this->loginSession($request, $user);
@@ -248,14 +251,14 @@ class TeacherAuthService
                     }
                 }
             } catch (\Throwable $e) {
-                Log::error('Error reading overrides in resolveTeacherDetails: ' . $e->getMessage());
+                Log::error('Error reading overrides in resolveTeacherDetails: '.$e->getMessage());
             }
         }
 
         $advisoriesPath = base_path('../amis_admin/config/class_advisories.php');
         if (file_exists($advisoriesPath)) {
             try {
-                $advisories = include($advisoriesPath);
+                $advisories = include $advisoriesPath;
                 if (is_array($advisories)) {
                     foreach (['elementary' => 'Elementary Department', 'high_school' => 'High School Department'] as $key => $deptName) {
                         if (isset($advisories[$key]) && is_array($advisories[$key])) {
@@ -274,7 +277,7 @@ class TeacherAuthService
                     }
                 }
             } catch (\Throwable $e) {
-                Log::error('Error reading class advisories in resolveTeacherDetails: ' . $e->getMessage());
+                Log::error('Error reading class advisories in resolveTeacherDetails: '.$e->getMessage());
             }
         }
 
@@ -282,17 +285,17 @@ class TeacherAuthService
             [
                 'name' => 'Ust. Raffy Lingasa',
                 'email' => 'tr.rlingasa@amis.edu.ph',
-                'dept' => 'Islamic School and Arabic Language Department'
+                'dept' => 'Islamic School and Arabic Language Department',
             ],
             [
                 'name' => 'Ust. Ahmad Al-Jamil',
                 'email' => 'tr.ajamil@amis.edu.ph',
-                'dept' => 'Islamic School and Arabic Language Department'
+                'dept' => 'Islamic School and Arabic Language Department',
             ],
             [
                 'name' => 'Ust. Omar Mukhtar',
                 'email' => 'tr.omukhtar@amis.edu.ph',
-                'dept' => 'Islamic School and Arabic Language Department'
+                'dept' => 'Islamic School and Arabic Language Department',
             ],
         ];
 
@@ -327,9 +330,10 @@ class TeacherAuthService
 
         $parts = explode(' ', $cleanName);
         if (count($parts) >= 2) {
-            return 'tr.' . substr($parts[0], 0, 1) . end($parts) . '@amis.edu.ph';
+            return 'tr.'.substr($parts[0], 0, 1).end($parts).'@amis.edu.ph';
         }
-        return 'tr.' . $cleanName . '@amis.edu.ph';
+
+        return 'tr.'.$cleanName.'@amis.edu.ph';
     }
 
     public function autoConfirmPasswordChanged(string $email): void
@@ -351,7 +355,7 @@ class TeacherAuthService
                 }
             }
         } catch (\Throwable $e) {
-            Log::error('Failed to auto-update password_changed on teacher login: ' . $e->getMessage());
+            Log::error('Failed to auto-update password_changed on teacher login: '.$e->getMessage());
         }
     }
 

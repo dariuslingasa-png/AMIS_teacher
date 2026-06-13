@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Services\MicrosoftGraphService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -65,7 +66,7 @@ class ExampleTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Your Teaching Dashboard');
-        $response->assertSee('Subject Load');
+        $response->assertSee('Classroom Workspaces');
     }
 
     public function test_teacher_can_create_class_and_channels_with_mocked_ms_teams(): void
@@ -73,12 +74,12 @@ class ExampleTest extends TestCase
         config(['services.microsoft.admin_upn' => 'admin@amis.edu.ph']);
 
         // Mock MicrosoftGraphService
-        $mockGraph = $this->mock(\App\Services\MicrosoftGraphService::class);
+        $mockGraph = $this->mock(MicrosoftGraphService::class);
         $mockGraph->shouldReceive('createTeam')
             ->once()
             ->with('G5 - GOLD [Boys & F2F]')
             ->andReturn(['id' => 'mock-team-id', 'displayName' => 'G5 - GOLD [Boys & F2F]']);
-        
+
         $mockGraph->shouldReceive('waitForTeam')
             ->once()
             ->with('mock-team-id')
@@ -130,7 +131,7 @@ class ExampleTest extends TestCase
             'name' => 'GOLD',
             'gender' => 'male',
             'mode' => 'Face-to-Face',
-            'channels' => ['Mathematics']
+            'channels' => ['Mathematics'],
         ]);
 
         $response->assertRedirect(route('teacher.subjects'));

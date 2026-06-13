@@ -12,13 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            if (!Schema::hasColumn('users', 'microsoft_id')) {
+            if (! Schema::hasColumn('users', 'microsoft_id')) {
                 $table->string('microsoft_id')->nullable()->after('firebase_linked_at');
             }
-            if (!Schema::hasColumn('users', 'microsoft_email')) {
+            if (! Schema::hasColumn('users', 'microsoft_email')) {
                 $table->string('microsoft_email')->nullable()->after('microsoft_id');
             }
-            if (!Schema::hasColumn('users', 'microsoft_linked_at')) {
+            if (! Schema::hasColumn('users', 'microsoft_linked_at')) {
                 $table->timestamp('microsoft_linked_at')->nullable()->after('microsoft_email');
             }
         });

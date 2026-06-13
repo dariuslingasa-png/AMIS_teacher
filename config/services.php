@@ -36,12 +36,12 @@ return [
     ],
 
     'microsoft' => [
-        'client_id'      => env('MICROSOFT_CLIENT_ID'),
-        'client_secret'  => env('MICROSOFT_CLIENT_SECRET'),
-        'tenant_id'      => env('MICROSOFT_TENANT_ID'),
-        'admin_upn'      => env('MICROSOFT_ADMIN_UPN'),
+        'client_id' => env('MICROSOFT_CLIENT_ID'),
+        'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
+        'tenant_id' => env('MICROSOFT_TENANT_ID'),
+        'admin_upn' => env('MICROSOFT_ADMIN_UPN'),
         'admin_password' => env('MICROSOFT_ADMIN_PASSWORD'),
-        'redirect_uri'   => env('MICROSOFT_REDIRECT_URI', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/auth/microsoft/callback'),
+        'redirect_uri' => env('MICROSOFT_REDIRECT_URI', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/auth/microsoft/callback'),
     ],
 
     'google' => [
@@ -51,13 +51,12 @@ return [
     ],
 
     'azure' => [
-        'client_id'            => env('AZURE_CLIENT_ID'),
-        'client_secret'        => env('AZURE_CLIENT_SECRET'),
-        'tenant_id'            => env('AZURE_TENANT_ID'),
+        'client_id' => env('AZURE_CLIENT_ID'),
+        'client_secret' => env('AZURE_CLIENT_SECRET'),
+        'tenant_id' => env('AZURE_TENANT_ID'),
         'redirect_uri_teacher' => env('AZURE_REDIRECT_URI_TEACHER'),
         'redirect_uri_student' => env('AZURE_REDIRECT_URI_STUDENT'),
     ],
-
 
     'firebase' => [
         'project_id' => env('FIREBASE_PROJECT_ID'),
@@ -72,15 +71,15 @@ return [
     ],
 
     'school' => [
-        'year'                  => env('SCHOOL_YEAR', '2026-2027'),
-        'previous_year'         => env('SCHOOL_PREVIOUS_YEAR', '2025-2026'),
-        'enrollment_fee'        => (float) env('SCHOOL_ENROLLMENT_FEE', 4000),
+        'year' => env('SCHOOL_YEAR', '2026-2027'),
+        'previous_year' => env('SCHOOL_PREVIOUS_YEAR', '2025-2026'),
+        'enrollment_fee' => (float) env('SCHOOL_ENROLLMENT_FEE', 4000),
         'finance_reviewer_name' => env('FINANCE_REVIEWER_NAME', 'Finance Office'),
-        'finance_checked_by'    => env('FINANCE_CHECKED_BY', 'System / Finance'),
-        'address'               => env('SCHOOL_ADDRESS', 'Bugac Ma-a Road, Davao City'),
-        'email'                 => env('SCHOOL_EMAIL', 'almunawwaraislamicschool@gmail.com'),
-        'soa_preview_date'      => env('SOA_PREVIEW_DATE'),
-        'invoice_id_offset'     => (int) env('INVOICE_ID_OFFSET', 203),
+        'finance_checked_by' => env('FINANCE_CHECKED_BY', 'System / Finance'),
+        'address' => env('SCHOOL_ADDRESS', 'Bugac Ma-a Road, Davao City'),
+        'email' => env('SCHOOL_EMAIL', 'almunawwaraislamicschool@gmail.com'),
+        'soa_preview_date' => env('SOA_PREVIEW_DATE'),
+        'invoice_id_offset' => (int) env('INVOICE_ID_OFFSET', 203),
     ],
 
 ];

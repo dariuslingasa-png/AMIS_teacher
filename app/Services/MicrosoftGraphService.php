@@ -2,21 +2,26 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class MicrosoftGraphService
 {
     private string $tenantId;
+
     private string $clientId;
+
     private string $clientSecret;
+
     private ?string $accessToken = null;
+
     private ?string $delegatedToken = null;
 
     public function __construct()
     {
-        $this->tenantId     = (string) config('services.microsoft.tenant_id');
-        $this->clientId     = (string) config('services.microsoft.client_id');
+        $this->tenantId = (string) config('services.microsoft.tenant_id');
+        $this->clientId = (string) config('services.microsoft.client_id');
         $this->clientSecret = (string) config('services.microsoft.client_secret');
     }
 
@@ -24,7 +29,7 @@ class MicrosoftGraphService
 
     /**
      * Get Client Credentials access token.
-     * 
+     *
      * @throws \Exception
      */
     private function getAccessToken(): string
@@ -36,30 +41,31 @@ class MicrosoftGraphService
         $response = Http::asForm()->post(
             "https://login.microsoftonline.com/{$this->tenantId}/oauth2/v2.0/token",
             [
-                'grant_type'    => 'client_credentials',
-                'client_id'     => $this->clientId,
+                'grant_type' => 'client_credentials',
+                'client_id' => $this->clientId,
                 'client_secret' => $this->clientSecret,
-                'scope'         => 'https://graph.microsoft.com/.default',
+                'scope' => 'https://graph.microsoft.com/.default',
             ]
         );
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             Log::error('Microsoft Graph token retrieval failed', $response->json() ?: []);
-            throw new \Exception('Failed to get Microsoft access token: ' . $response->body());
+            throw new \Exception('Failed to get Microsoft access token: '.$response->body());
         }
 
         $this->accessToken = (string) $response->json('access_token');
+
         return $this->accessToken;
     }
 
     /**
      * Create graph request client.
      */
-    private function graph(): \Illuminate\Http\Client\PendingRequest
+    private function graph(): PendingRequest
     {
         return Http::withToken($this->getAccessToken())
-                   ->baseUrl('https://graph.microsoft.com/v1.0')
-                   ->timeout(60);
+            ->baseUrl('https://graph.microsoft.com/v1.0')
+            ->timeout(60);
     }
 
     /**
@@ -73,7 +79,7 @@ class MicrosoftGraphService
             return $this->delegatedToken;
         }
 
-        $adminUpn      = config('services.microsoft.admin_upn');
+        $adminUpn = config('services.microsoft.admin_upn');
         $adminPassword = config('services.microsoft.admin_password');
 
         if (empty($adminPassword)) {
@@ -83,51 +89,52 @@ class MicrosoftGraphService
         $response = Http::asForm()->post(
             "https://login.microsoftonline.com/{$this->tenantId}/oauth2/v2.0/token",
             [
-                'grant_type'    => 'password',
-                'client_id'     => $this->clientId,
+                'grant_type' => 'password',
+                'client_id' => $this->clientId,
                 'client_secret' => $this->clientSecret,
-                'username'      => $adminUpn,
-                'password'      => $adminPassword,
-                'scope'         => 'https://graph.microsoft.com/.default',
+                'username' => $adminUpn,
+                'password' => $adminPassword,
+                'scope' => 'https://graph.microsoft.com/.default',
             ]
         );
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             Log::error('Microsoft Graph ROPC token error', $response->json() ?: []);
-            throw new \Exception('Failed to get delegated access token: ' . $response->body());
+            throw new \Exception('Failed to get delegated access token: '.$response->body());
         }
 
         $this->delegatedToken = $response->json('access_token');
         Log::info("ROPC token obtained successfully for {$adminUpn}");
+
         return $this->delegatedToken;
     }
 
-    private function graphDelegated(): \Illuminate\Http\Client\PendingRequest
+    private function graphDelegated(): PendingRequest
     {
         return Http::withToken($this->getDelegatedToken())
-                   ->baseUrl('https://graph.microsoft.com/v1.0')
-                   ->timeout(60);
+            ->baseUrl('https://graph.microsoft.com/v1.0')
+            ->timeout(60);
     }
 
     // ── User Management ───────────────────────────────────────────────
 
     /**
      * Reset the Microsoft account password for a teacher.
-     * 
+     *
      * @throws \Exception
      */
     public function resetPassword(string $upnOrId, string $newPassword, bool $forceChangePasswordNextSignIn = true): void
     {
-        $response = $this->graph()->patch("/users/" . urlencode($upnOrId), [
+        $response = $this->graph()->patch('/users/'.urlencode($upnOrId), [
             'passwordProfile' => [
-                'password'                      => $newPassword,
+                'password' => $newPassword,
                 'forceChangePasswordNextSignIn' => $forceChangePasswordNextSignIn,
             ],
         ]);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             Log::error("Failed to reset password for user {$upnOrId}", $response->json() ?: []);
-            throw new \Exception('Failed to reset password: ' . $response->body());
+            throw new \Exception('Failed to reset password: '.$response->body());
         }
     }
 
@@ -142,28 +149,28 @@ class MicrosoftGraphService
 
         // First get the admin user's object ID
         $adminUser = $this->graph()->get("/users/{$adminUpn}")->json();
-        $adminId   = $adminUser['id'] ?? null;
+        $adminId = $adminUser['id'] ?? null;
 
-        if (!$adminId) {
+        if (! $adminId) {
             throw new \Exception("Could not find admin user: {$adminUpn}");
         }
 
         $response = $this->graph()->post('/teams', [
             'template@odata.bind' => "https://graph.microsoft.com/v1.0/teamsTemplates('standard')",
-            'displayName'         => $displayName,
-            'description'         => $description,
-            'members'             => [
+            'displayName' => $displayName,
+            'description' => $description,
+            'members' => [
                 [
-                    '@odata.type'     => '#microsoft.graph.aadUserConversationMember',
+                    '@odata.type' => '#microsoft.graph.aadUserConversationMember',
                     'user@odata.bind' => "https://graph.microsoft.com/v1.0/users('{$adminId}')",
-                    'roles'           => ['owner'],
+                    'roles' => ['owner'],
                 ],
             ],
         ]);
 
-        if (!$response->successful() && $response->status() !== 202) {
+        if (! $response->successful() && $response->status() !== 202) {
             Log::error('Graph createTeam error', $response->json() ?: []);
-            throw new \Exception('Failed to create team: ' . $response->body());
+            throw new \Exception('Failed to create team: '.$response->body());
         }
 
         // Team creation returns 202 with Location header
@@ -173,8 +180,8 @@ class MicrosoftGraphService
         preg_match("/teams\(?'?([0-9a-f\-]{36})'?\)?/i", $location, $matches);
         $teamId = $matches[1] ?? null;
 
-        if (!$teamId) {
-            throw new \Exception('Could not extract team ID from Location header: ' . $location);
+        if (! $teamId) {
+            throw new \Exception('Could not extract team ID from Location header: '.$location);
         }
 
         return ['id' => $teamId, 'displayName' => $displayName];
@@ -186,17 +193,24 @@ class MicrosoftGraphService
     public function getGeneralChannelId(string $teamId): ?string
     {
         $response = $this->graph()->get("/teams/{$teamId}/channels");
-        if (!$response->successful()) return null;
+        if (! $response->successful()) {
+            return null;
+        }
 
         $channels = $response->json('value', []);
 
         // Prefer Announcements, fall back to General
         foreach ($channels as $ch) {
-            if (stripos($ch['displayName'], 'Announcement') !== false) return $ch['id'];
+            if (stripos($ch['displayName'], 'Announcement') !== false) {
+                return $ch['id'];
+            }
         }
         foreach ($channels as $ch) {
-            if (stripos($ch['displayName'], 'General') !== false) return $ch['id'];
+            if (stripos($ch['displayName'], 'General') !== false) {
+                return $ch['id'];
+            }
         }
+
         return $channels[0]['id'] ?? null;
     }
 
@@ -205,10 +219,10 @@ class MicrosoftGraphService
      */
     public function postWelcomeCard(string $teamId, string $channelId, array $section): void
     {
-        $grade   = $section['grade_level'];
-        $mode    = $section['learning_mode'];
-        $shift   = $section['shift'] ?? null;
-        $gender  = ($section['gender'] ?? 'male') === 'male' ? 'Boys' : 'Girls';
+        $grade = $section['grade_level'];
+        $mode = $section['learning_mode'];
+        $shift = $section['shift'] ?? null;
+        $gender = ($section['gender'] ?? 'male') === 'male' ? 'Boys' : 'Girls';
         $subject = $section['subject'] ?? null;
         $teacher = $section['teacher'] ?? null;
 
@@ -275,13 +289,13 @@ class MicrosoftGraphService
         $payload = [
             'body' => [
                 'contentType' => 'html',
-                'content'     => $html,
+                'content' => $html,
             ],
         ];
 
         $response = $this->graphDelegated()->post("/teams/{$teamId}/channels/{$channelId}/messages", $payload);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             Log::warning('postWelcomeCard failed', $response->json() ?: []);
         }
     }
@@ -293,9 +307,9 @@ class MicrosoftGraphService
     {
         $response = $this->graph()->delete("/groups/{$teamId}");
 
-        if (!$response->successful() && $response->status() !== 404) {
+        if (! $response->successful() && $response->status() !== 404) {
             Log::error('Graph deleteTeam error', ['status' => $response->status(), 'body' => $response->body()]);
-            throw new \Exception('Failed to delete team: ' . $response->body());
+            throw new \Exception('Failed to delete team: '.$response->body());
         }
     }
 
@@ -306,8 +320,8 @@ class MicrosoftGraphService
     {
         $response = $this->graph()->get("/teams/{$teamId}");
 
-        if (!$response->successful()) {
-            throw new \Exception('Failed to get team: ' . $response->body());
+        if (! $response->successful()) {
+            throw new \Exception('Failed to get team: '.$response->body());
         }
 
         return $response->json();
@@ -323,11 +337,14 @@ class MicrosoftGraphService
             sleep(3);
             try {
                 $team = $this->getTeam($teamId);
-                if (!empty($team['id'])) return $team['id'];
+                if (! empty($team['id'])) {
+                    return $team['id'];
+                }
             } catch (\Exception) {
                 // Not ready yet, keep polling
             }
         }
+
         return $teamId; // Return as-is after timeout
     }
 
@@ -344,37 +361,39 @@ class MicrosoftGraphService
         $ownerId = null;
         for ($attempt = 0; $attempt < 3; $attempt++) {
             $ownerUser = $this->graph()->get("/users/{$ownerUpn}")->json();
-            $ownerId   = $ownerUser['id'] ?? null;
-            if ($ownerId) break;
+            $ownerId = $ownerUser['id'] ?? null;
+            if ($ownerId) {
+                break;
+            }
             sleep(2);
         }
 
-        if (!$ownerId) {
+        if (! $ownerId) {
             // Fallback: try searching by UPN via filter
             $search = $this->graph()->get('/users', ['$filter' => "userPrincipalName eq '{$ownerUpn}'"])->json();
             $ownerId = $search['value'][0]['id'] ?? null;
         }
 
-        if (!$ownerId) {
+        if (! $ownerId) {
             Log::error("createPrivateChannel: Could not resolve owner ID for UPN [{$ownerUpn}]");
             throw new \Exception("Could not find owner user: {$ownerUpn}");
         }
 
         $response = $this->graph()->post("/teams/{$teamId}/channels", [
-            'displayName'    => $channelName,
+            'displayName' => $channelName,
             'membershipType' => 'private',
-            'members'        => [
+            'members' => [
                 [
-                    '@odata.type'     => '#microsoft.graph.aadUserConversationMember',
+                    '@odata.type' => '#microsoft.graph.aadUserConversationMember',
                     'user@odata.bind' => "https://graph.microsoft.com/v1.0/users('{$ownerId}')",
-                    'roles'           => ['owner'],
+                    'roles' => ['owner'],
                 ],
             ],
         ]);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             Log::error('Graph createPrivateChannel error', $response->json() ?: []);
-            throw new \Exception('Failed to create channel: ' . $response->body());
+            throw new \Exception('Failed to create channel: '.$response->body());
         }
 
         return $response->json();
@@ -389,13 +408,13 @@ class MicrosoftGraphService
         $userId = $this->resolveUserId($upnOrId);
 
         $response = $this->graph()->post("/teams/{$teamId}/members", [
-            '@odata.type'     => '#microsoft.graph.aadUserConversationMember',
+            '@odata.type' => '#microsoft.graph.aadUserConversationMember',
             'user@odata.bind' => "https://graph.microsoft.com/v1.0/users('{$userId}')",
-            'roles'           => ['owner'],
+            'roles' => ['owner'],
         ]);
 
-        if (!$response->successful() && $response->status() !== 409) {
-            throw new \Exception('Failed to add team owner: ' . $response->body());
+        if (! $response->successful() && $response->status() !== 409) {
+            throw new \Exception('Failed to add team owner: '.$response->body());
         }
     }
 
@@ -409,14 +428,14 @@ class MicrosoftGraphService
         $response = $this->graph()->post(
             "/teams/{$teamId}/channels/{$channelId}/members",
             [
-                '@odata.type'     => '#microsoft.graph.aadUserConversationMember',
+                '@odata.type' => '#microsoft.graph.aadUserConversationMember',
                 'user@odata.bind' => "https://graph.microsoft.com/v1.0/users('{$userId}')",
-                'roles'           => ['owner'],
+                'roles' => ['owner'],
             ]
         );
 
-        if (!$response->successful() && $response->status() !== 409) {
-            throw new \Exception('Failed to add channel owner: ' . $response->body());
+        if (! $response->successful() && $response->status() !== 409) {
+            throw new \Exception('Failed to add channel owner: '.$response->body());
         }
     }
 
@@ -429,10 +448,11 @@ class MicrosoftGraphService
         if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $upnOrId)) {
             return $upnOrId;
         }
-        $response = $this->graph()->get("/users/" . urlencode($upnOrId) . '?$select=id');
-        if (!$response->successful()) {
-            throw new \Exception("Could not resolve user [{$upnOrId}]: " . $response->body());
+        $response = $this->graph()->get('/users/'.urlencode($upnOrId).'?$select=id');
+        if (! $response->successful()) {
+            throw new \Exception("Could not resolve user [{$upnOrId}]: ".$response->body());
         }
+
         return $response->json('id');
     }
 }

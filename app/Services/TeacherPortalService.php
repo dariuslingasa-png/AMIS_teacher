@@ -5,19 +5,21 @@ namespace App\Services;
 use App\DTOs\AnnouncementData;
 use App\DTOs\AssessmentData;
 use App\DTOs\MeetingData;
+use App\Models\ClassAdvisoryAssignment;
 use App\Models\LearningMaterial;
+use App\Models\Section;
 use App\Models\SectionSubject;
+use App\Models\StudentSection;
 use App\Models\Subject;
 use App\Models\SubjectAnnouncement;
 use App\Models\SubjectMeeting;
 use App\Models\TeacherSubjectAssignment;
-use App\Models\Section;
-use App\Services\MicrosoftGraphService;
+use App\Support\EnrollmentStorage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 
 class TeacherPortalService
 {
@@ -27,6 +29,7 @@ class TeacherPortalService
     {
         $this->graph = $graph;
     }
+
     public function getPortalData(Request $request): array
     {
         $subjects = $this->subjectsFor($request);
@@ -184,7 +187,7 @@ class TeacherPortalService
         } elseif ($grade === 'Kinder 2') {
             $prefix = 'K2';
         } else {
-            $prefix = 'G' . str_replace('Grade ', '', $grade);
+            $prefix = 'G'.str_replace('Grade ', '', $grade);
         }
 
         $shiftLabel = $shift ? ($shift === '1st Shift' ? '1st Shift' : '2nd Shift') : 'F2F';
@@ -208,32 +211,32 @@ class TeacherPortalService
             if ($generalChannelId) {
                 try {
                     $this->graph->postWelcomeCard($msTeamId, $generalChannelId, [
-                        'grade_level'   => $grade,
+                        'grade_level' => $grade,
                         'learning_mode' => $mode,
-                        'shift'         => $shift,
-                        'gender'        => $gender,
+                        'shift' => $shift,
+                        'gender' => $gender,
                     ]);
                 } catch (\Exception $e) {
-                    Log::warning("Could not post welcome card to General channel: " . $e->getMessage());
+                    Log::warning('Could not post welcome card to General channel: '.$e->getMessage());
                 }
             }
         } catch (\Exception $e) {
-            Log::error("Failed to create MS Team [{$teamName}]: " . $e->getMessage());
-            throw new \Exception('Failed to create Microsoft Team: ' . $e->getMessage());
+            Log::error("Failed to create MS Team [{$teamName}]: ".$e->getMessage());
+            throw new \Exception('Failed to create Microsoft Team: '.$e->getMessage());
         }
 
         // Save section in DB
         $schoolYear = config('services.school.year', '2026-2027');
 
         $section = Section::create([
-            'name'          => $name,
-            'grade_level'   => $grade,
+            'name' => $name,
+            'grade_level' => $grade,
             'learning_mode' => $mode,
-            'shift'         => $shift,
-            'gender'        => $gender,
-            'school_year'   => $schoolYear,
-            'ms_team_id'    => $msTeamId,
-            'ms_team_url'   => $msTeamUrl,
+            'shift' => $shift,
+            'gender' => $gender,
+            'school_year' => $schoolYear,
+            'ms_team_id' => $msTeamId,
+            'ms_team_url' => $msTeamUrl,
         ]);
 
         // If teacher UPN is available, invite teacher as Team Owner
@@ -241,7 +244,7 @@ class TeacherPortalService
             try {
                 $this->graph->addTeamOwner($msTeamId, $teacherUpn);
             } catch (\Exception $e) {
-                Log::warning("Could not add teacher [{$teacherUpn}] as Team Owner: " . $e->getMessage());
+                Log::warning("Could not add teacher [{$teacherUpn}] as Team Owner: ".$e->getMessage());
             }
         }
 
@@ -258,15 +261,15 @@ class TeacherPortalService
                         // Post welcome card to private channel
                         try {
                             $this->graph->postWelcomeCard($msTeamId, $channelId, [
-                                'grade_level'   => $grade,
+                                'grade_level' => $grade,
                                 'learning_mode' => $mode,
-                                'shift'         => $shift,
-                                'gender'        => $gender,
-                                'subject'       => $channelName,
-                                'teacher'       => $teacherName,
+                                'shift' => $shift,
+                                'gender' => $gender,
+                                'subject' => $channelName,
+                                'teacher' => $teacherName,
                             ]);
                         } catch (\Exception $e) {
-                            Log::warning("Could not post welcome card to channel [{$channelName}]: " . $e->getMessage());
+                            Log::warning("Could not post welcome card to channel [{$channelName}]: ".$e->getMessage());
                         }
 
                         // Invite teacher as Channel Owner
@@ -274,20 +277,20 @@ class TeacherPortalService
                             try {
                                 $this->graph->addChannelOwner($msTeamId, $channelId, $teacherUpn);
                             } catch (\Exception $e) {
-                                Log::warning("Could not invite teacher [{$teacherUpn}] as channel owner: " . $e->getMessage());
+                                Log::warning("Could not invite teacher [{$teacherUpn}] as channel owner: ".$e->getMessage());
                             }
                         }
                     }
                 } catch (\Exception $e) {
-                    Log::error("Failed to create MS private channel [{$channelName}]: " . $e->getMessage());
+                    Log::error("Failed to create MS private channel [{$channelName}]: ".$e->getMessage());
                 }
             }
 
             SectionSubject::create([
-                'section_id'    => $section->id,
-                'subject_name'  => $channelName,
-                'teacher_name'  => $teacherName,
-                'schedule'      => null,
+                'section_id' => $section->id,
+                'subject_name' => $channelName,
+                'teacher_name' => $teacherName,
+                'schedule' => null,
                 'ms_channel_id' => $channelId,
             ]);
         }
@@ -327,6 +330,7 @@ class TeacherPortalService
 
             return $matches->map(function (SectionSubject $sectionSubject) use ($assignment, &$mappedSectionSubjectIds) {
                 $mappedSectionSubjectIds->push($sectionSubject->id);
+
                 return $this->sectionSubjectArray($sectionSubject, $assignment->subject);
             });
         })->filter();
@@ -342,7 +346,7 @@ class TeacherPortalService
                 ->where('grade_level', $gradeLevel)
                 ->first();
 
-            if (!$catalogSubject) {
+            if (! $catalogSubject) {
                 $catalogSubject = Subject::where('name', $subjectName)->first();
             }
 
@@ -359,7 +363,7 @@ class TeacherPortalService
         $teacherEmail = $request->session()->get('teacher_email');
 
         // 1. Get from database ClassAdvisoryAssignment
-        $dbSectionIds = \App\Models\ClassAdvisoryAssignment::where('status', 'active')
+        $dbSectionIds = ClassAdvisoryAssignment::where('status', 'active')
             ->where(function ($query) use ($teacherKey, $teacherEmail, $teacherName) {
                 $query->where('teacher_key', $teacherKey);
                 if ($teacherEmail) {
@@ -377,22 +381,23 @@ class TeacherPortalService
         $configSectionIds = collect();
         if ($teacherName) {
             $cleanTeacherName = trim(str_ireplace('TEACHER ', '', $teacherName));
-            
+
             $allAdvisories = collect();
             foreach (config('class_advisories', []) as $key => $rows) {
                 if (in_array($key, ['elementary', 'high_school'], true)) {
                     $allAdvisories = $allAdvisories->concat($rows);
                 }
             }
-            
+
             $matchingAdvisoryGrades = $allAdvisories->filter(function ($adv) use ($cleanTeacherName) {
                 $advTeacher = trim(str_ireplace('TEACHER ', '', $adv['teacher'] ?? ''));
+
                 return str_contains(strtolower($advTeacher), strtolower($cleanTeacherName)) ||
                        str_contains(strtolower($cleanTeacherName), strtolower($advTeacher));
             })->pluck('grade_level')->unique();
 
             if ($matchingAdvisoryGrades->isNotEmpty()) {
-                $configSectionIds = \App\Models\Section::whereIn('grade_level', $matchingAdvisoryGrades)
+                $configSectionIds = Section::whereIn('grade_level', $matchingAdvisoryGrades)
                     ->pluck('id')
                     ->unique();
             }
@@ -406,7 +411,7 @@ class TeacherPortalService
         $subjectSectionIds = $subjects->pluck('section_id')->filter()->unique();
         $allSectionIds = $subjectSectionIds->concat($advisorySectionIds)->unique();
 
-        return \App\Models\StudentSection::with(['student.user', 'student.applicant'])
+        return StudentSection::with(['student.user', 'student.applicant'])
             ->whereIn('section_id', $allSectionIds)
             ->get()
             ->map(fn ($row) => [
@@ -416,13 +421,15 @@ class TeacherPortalService
                 'student_no' => $row->student?->student_number ?? 'N/A',
                 'grade' => $row->student?->grade_level ?? '',
                 'section' => $row->student?->section ?? '',
-                'photo_url' => \App\Support\EnrollmentStorage::url($row->student?->applicant?->photo_2x2_url),
+                'photo_url' => EnrollmentStorage::url($row->student?->applicant?->photo_2x2_url),
             ]);
     }
 
     private function catalogSubjectArray(?Subject $subject): ?array
     {
-        if (! $subject) return null;
+        if (! $subject) {
+            return null;
+        }
 
         return [
             'id' => 'subject-'.$subject->id,
@@ -460,7 +467,9 @@ class TeacherPortalService
 
     private function resolveSubject(Request $request, string $workspaceId): array
     {
-        $subject = $this->subjectsFor($request)->firstWhere('id', $workspaceId); abort_unless($subject, 403, 'This subject is not assigned to you.');
+        $subject = $this->subjectsFor($request)->firstWhere('id', $workspaceId);
+        abort_unless($subject, 403, 'This subject is not assigned to you.');
+
         return $subject;
     }
 
@@ -514,5 +523,4 @@ class TeacherPortalService
     {
         return Str::slug($request->session()->get('teacher_name', 'teacher'));
     }
-
 }

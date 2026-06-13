@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\TeacherOnly;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,7 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('teacher.login'));
 
         $middleware->alias([
-            'teacher' => \App\Http\Middleware\TeacherOnly::class,
+            'teacher' => TeacherOnly::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

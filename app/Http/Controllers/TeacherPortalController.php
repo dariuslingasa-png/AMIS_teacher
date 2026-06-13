@@ -2,17 +2,19 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreSubjectRequest;
+use App\DTOs\AnnouncementData;
+use App\DTOs\AssessmentData;
+use App\DTOs\MeetingData;
+use App\Http\Requests\StoreAnnouncementRequest;
+use App\Http\Requests\StoreAssessmentRequest;
 use App\Http\Requests\StoreMaterialRequest;
 use App\Http\Requests\StoreMeetingRequest;
-use App\Http\Requests\StoreAssessmentRequest;
 use App\Http\Requests\StoreScoresRequest;
-use App\Http\Requests\StoreAnnouncementRequest;
-use App\DTOs\MeetingData;
-use App\DTOs\AssessmentData;
-use App\DTOs\AnnouncementData;
+use App\Http\Requests\StoreSubjectRequest;
+use App\Models\User;
 use App\Services\TeacherPortalService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class TeacherPortalController extends Controller
 {
@@ -41,7 +43,7 @@ class TeacherPortalController extends Controller
     {
         return view('teacher.coming-soon', [
             'heading' => 'Classroom Workspace',
-            'icon' => 'book-open'
+            'icon' => 'book-open',
         ]);
     }
 
@@ -54,6 +56,7 @@ class TeacherPortalController extends Controller
     {
         try {
             $this->portalService->createClassAndChannels($request, $request->validated());
+
             return redirect()->route('teacher.subjects')->with('success', 'Class and Channels successfully created and provisioned on MS Teams!');
         } catch (\Exception $e) {
             return redirect()->back()->withInput()->withErrors(['error' => $e->getMessage()]);
@@ -64,7 +67,7 @@ class TeacherPortalController extends Controller
     {
         return view('teacher.coming-soon', [
             'heading' => 'Meetings',
-            'icon' => 'video'
+            'icon' => 'video',
         ]);
     }
 
@@ -87,7 +90,7 @@ class TeacherPortalController extends Controller
     {
         return view('teacher.coming-soon', [
             'heading' => 'Gradebook',
-            'icon' => 'clipboard-list'
+            'icon' => 'clipboard-list',
         ]);
     }
 
@@ -121,7 +124,7 @@ class TeacherPortalController extends Controller
     {
         return view('teacher.coming-soon', [
             'heading' => 'Announcements',
-            'icon' => 'megaphone'
+            'icon' => 'megaphone',
         ]);
     }
 
@@ -137,7 +140,7 @@ class TeacherPortalController extends Controller
     {
         return view('teacher.coming-soon', [
             'heading' => 'Settings',
-            'icon' => 'settings'
+            'icon' => 'settings',
         ]);
     }
 
@@ -148,13 +151,13 @@ class TeacherPortalController extends Controller
             'new_password' => 'required|min:8|confirmed',
         ]);
 
-        $user = \App\Models\User::where('email', session('teacher_email'))->first();
-        if (!$user || !\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password)) {
+        $user = User::where('email', session('teacher_email'))->first();
+        if (! $user || ! Hash::check($request->current_password, $user->password)) {
             return back()->withErrors(['current_password' => 'Current password is incorrect.']);
         }
 
         $user->update([
-            'password' => \Illuminate\Support\Facades\Hash::make($request->new_password),
+            'password' => Hash::make($request->new_password),
         ]);
 
         return back()->with('success', 'Password changed successfully!');
@@ -164,7 +167,7 @@ class TeacherPortalController extends Controller
     {
         return view('teacher.coming-soon', [
             'heading' => 'eBook',
-            'icon' => 'book-open-check'
+            'icon' => 'book-open-check',
         ]);
     }
 }

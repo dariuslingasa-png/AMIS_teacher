@@ -72,7 +72,6 @@ class User extends Authenticatable
         ];
     }
 
-
     public function hasAdminPortalAccess(): bool
     {
         return in_array($this->role, self::ADMIN_PORTAL_ROLES, true);

@@ -50,6 +50,24 @@ return new class extends Migration
             });
         }
 
+        if (! Schema::hasTable('class_advisory_assignments')) {
+            Schema::create('class_advisory_assignments', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('section_id')->constrained()->cascadeOnDelete();
+                $table->string('teacher_key', 160)->index();
+                $table->string('teacher_name');
+                $table->string('teacher_email')->nullable()->index();
+                $table->string('school_year', 20)->default('2026-2027')->index();
+                $table->string('status', 20)->default('active')->index();
+                $table->unsignedBigInteger('assigned_by')->nullable();
+                $table->timestamp('assigned_at')->useCurrent();
+                $table->timestamp('ended_at')->nullable();
+                $table->timestamps();
+
+                $table->index(['section_id', 'school_year', 'status'], 'section_advisory_status_index');
+            });
+        }
+
         if (! Schema::hasTable('subject_meetings')) {
             Schema::create('subject_meetings', function (Blueprint $table) {
                 $table->id();
@@ -112,6 +130,7 @@ return new class extends Migration
         Schema::dropIfExists('subject_announcements');
         Schema::dropIfExists('learning_materials');
         Schema::dropIfExists('subject_meetings');
+        Schema::dropIfExists('class_advisory_assignments');
         Schema::dropIfExists('teacher_subject_assignments');
     }
 };

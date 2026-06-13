@@ -2,19 +2,19 @@
 
 namespace Tests\Unit;
 
-use App\Services\TeacherPortalService;
-use App\DTOs\SubjectData;
 use App\DTOs\MeetingData;
+use App\DTOs\SubjectData;
 use App\Enums\LearningMode;
 use App\Enums\MeetingStatus;
-use Illuminate\Http\Request;
+use App\Services\MicrosoftGraphService;
+use App\Services\TeacherPortalService;
 use PHPUnit\Framework\TestCase;
 
 class TeacherPortalServiceTest extends TestCase
 {
     public function test_portal_service_exposes_subject_workspace_actions(): void
     {
-        $graphMock = $this->createMock(\App\Services\MicrosoftGraphService::class);
+        $graphMock = $this->createMock(MicrosoftGraphService::class);
         $service = new TeacherPortalService($graphMock);
 
         $this->assertTrue(method_exists($service, 'getPortalData'));
