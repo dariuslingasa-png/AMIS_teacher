@@ -51,10 +51,10 @@ return [
     ],
 
     'azure' => [
-        'client_id' => env('AZURE_CLIENT_ID'),
-        'client_secret' => env('AZURE_CLIENT_SECRET'),
-        'tenant_id' => env('AZURE_TENANT_ID'),
-        'redirect_uri_teacher' => env('AZURE_REDIRECT_URI_TEACHER'),
+        'client_id' => env('AZURE_CLIENT_ID', env('MICROSOFT_CLIENT_ID')),
+        'client_secret' => env('AZURE_CLIENT_SECRET', env('MICROSOFT_CLIENT_SECRET')),
+        'tenant_id' => env('AZURE_TENANT_ID', env('MICROSOFT_TENANT_ID')),
+        'redirect_uri_teacher' => env('AZURE_REDIRECT_URI_TEACHER', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/auth/microsoft/teacher/callback'),
         'redirect_uri_student' => env('AZURE_REDIRECT_URI_STUDENT'),
     ],
 
