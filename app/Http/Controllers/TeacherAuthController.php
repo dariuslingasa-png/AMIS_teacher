@@ -48,7 +48,7 @@ class TeacherAuthController extends Controller
         $changePasswordData = TeacherChangePasswordData::fromArray($request->validated());
         $this->authService->changePassword($request, $changePasswordData);
 
-        return redirect()->route('teacher.dashboard')->with('success', 'Password updated successfully. Welcome to the Teacher Portal.');
+        return redirect()->route('teacher.dashboard')->with('success', 'Password updated successfully. Welcome to the Faculty Portal.');
     }
 
     public function redirectMicrosoft(Request $request)
@@ -138,7 +138,7 @@ class TeacherAuthController extends Controller
                 return redirect()->route('teacher.settings')->withErrors(['microsoft' => 'Access denied. The Microsoft account must use an @amis.edu.ph email address.']);
             }
 
-            return $this->logoutMicrosoftAndRedirect($tenantId, $redirectUri, 'Access denied. This account is not allowed to access the Teacher Portal.');
+            return $this->logoutMicrosoftAndRedirect($tenantId, $redirectUri, 'Access denied. This account is not allowed to access the Faculty Portal.');
         }
 
         if ($isConnectFlow) {
@@ -158,7 +158,7 @@ class TeacherAuthController extends Controller
                 return redirect()->route('teacher.settings')->withErrors(['microsoft' => 'No active teacher account found for '.$email]);
             }
 
-            return $this->logoutMicrosoftAndRedirect($tenantId, $redirectUri, 'Access denied. This account is not allowed to access the Teacher Portal.');
+            return $this->logoutMicrosoftAndRedirect($tenantId, $redirectUri, 'Access denied. This account is not allowed to access the Faculty Portal.');
         }
 
         // Link details

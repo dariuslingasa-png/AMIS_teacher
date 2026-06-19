@@ -33,7 +33,7 @@ class TeacherOnly
                 $request->session()->regenerateToken();
 
                 // Store error message in cookie
-                $errorMessage = 'Access denied. This account is not allowed to access the Teacher Portal.';
+                $errorMessage = 'Access denied. This account is not allowed to access the Faculty Portal.';
                 $cookie = cookie('microsoft_auth_error', $errorMessage, 5);
 
                 // Redirect to Microsoft global logout endpoint

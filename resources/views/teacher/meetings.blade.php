@@ -13,7 +13,7 @@
                     @csrf
                     <input type="hidden" name="subject_id" value="{{ $subjects->first()['id'] }}">
                     <input type="hidden" name="title" value="Instant Meeting">
-                    <input type="hidden" name="description" value="Live class meeting started from the Teacher Portal.">
+                    <input type="hidden" name="description" value="Live class meeting started from the Faculty Portal.">
                     <input type="hidden" name="date" value="{{ now()->toDateString() }}">
                     <input type="hidden" name="time" value="{{ now()->format('H:i') }}">
                     <input type="hidden" name="duration" value="60">

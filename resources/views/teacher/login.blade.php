@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login - AMIS Teacher Portal</title>
+    <title>Login - AMIS Faculty Portal</title>
     <link rel="icon" type="image/png" href="{{ asset('images/AMIS_Logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -20,7 +20,7 @@
                     <div class="teacher-login-wordmark">
                         <p class="teacher-login-arabic" lang="ar" dir="rtl">المدرسة الإسلامية المنورة</p>
                         <h1>AL MUNAWWARA ISLAMIC SCHOOL</h1>
-                        <strong>Teacher Portal</strong>
+                        <strong>Faculty Portal</strong>
                     </div>
                 </div>
                 <p>Manage subjects, meetings, grades, and class updates from one focused portal.</p>
@@ -30,7 +30,7 @@
                 <div class="teacher-login-brand">
                     <div>
                         <h1>Sign in</h1>
-                        <p>Use your AMIS teacher account to continue.</p>
+                        <p>Use your AMIS faculty account to continue.</p>
                     </div>
                 </div>
 
@@ -44,8 +44,8 @@
                 <form method="POST" action="{{ route('teacher.login.store') }}" class="teacher-form" style="margin-top: 24px;">
                     @csrf
                     <label>
-                        <span>Teacher Email</span>
-                        <input name="teacher_id" type="text" value="{{ old('teacher_id') }}" required autofocus placeholder="teacher@amis.edu.ph">
+                        <span>Faculty Email</span>
+                        <input name="teacher_id" type="text" value="{{ old('teacher_id') }}" required autofocus placeholder="faculty@amis.edu.ph">
                     </label>
 
                     <label>

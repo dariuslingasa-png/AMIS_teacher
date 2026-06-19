@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Set New Password - AMIS Teacher Portal</title>
+    <title>Set New Password - AMIS Faculty Portal</title>
     <link rel="icon" type="image/png" href="{{ asset('images/AMIS_Logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://unpkg.com/lucide@latest"></script>

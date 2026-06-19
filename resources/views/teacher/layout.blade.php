@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? 'AMIS Teacher Portal' }}</title>
+    <title>{{ $title ?? 'AMIS Faculty Portal' }}</title>
     <link rel="icon" type="image/png" href="{{ asset('images/AMIS_Logo.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -20,7 +20,7 @@
                 <img src="{{ asset('images/AMIS_Logo.png') }}" alt="AMIS">
                 <div class="teacher-brand-text">
                     <strong>AMIS</strong>
-                    <small>Teacher Portal</small>
+                    <small>Faculty Portal</small>
                 </div>
             </a>
 
@@ -80,7 +80,7 @@
         <header class="teacher-topbar">
             <div class="teacher-topbar-start">
                 <div class="teacher-topbar-eyebrow">Al Munawwara Islamic School</div>
-                <h1>{{ $heading ?? 'Teacher Portal' }}</h1>
+                <h1>{{ $heading ?? 'Faculty Portal' }}</h1>
             </div>
             <div class="teacher-topbar-end">
                 <a href="{{ route('teacher.meetings') }}" class="teacher-icon-btn" aria-label="Meetings">
