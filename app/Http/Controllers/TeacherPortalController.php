@@ -113,10 +113,33 @@ class TeacherPortalController extends Controller
     public function students(Request $request)
     {
         $data = $this->portalService->getPortalData($request);
+        $advisorySectionIds = $this->portalService->advisorySectionsFor($request);
+
+        // Get actual Section models for advisory sections
+        $advisorySections = \App\Models\Section::whereIn('id', $advisorySectionIds)->get()->map(function ($section) use ($data) {
+            return [
+                'title' => 'Advisory: ' . $section->section_title . ' (' . $section->learning_mode . ')',
+                'students' => collect($data['students'])->where('section_id', $section->id)->values(),
+            ];
+        })->filter(fn($sec) => $sec['students']->isNotEmpty());
+
+        // Get subjects sections
+        $subjectSections = collect($data['subjects'])->map(function ($subject) use ($data) {
+            $sectionTitle = str_replace($subject['grade'] . ' - ', '', $subject['section'] ?? '');
+            $title = 'Subject: ' . $subject['grade'] . ' - ' . $subject['name'];
+            if (!empty($sectionTitle)) {
+                $title .= ' (' . $sectionTitle . ')';
+            }
+            return [
+                'title' => $title,
+                'students' => collect($data['students'])->where('section_id', $subject['section_id'])->values(),
+            ];
+        })->filter(fn($sec) => $sec['students']->isNotEmpty());
 
         return view('teacher.students', [
-            'students' => collect($data['students']),
-            'subjects' => collect($data['subjects']),
+            'advisorySections' => $advisorySections,
+            'subjectSections' => $subjectSections,
+            'totalStudentsCount' => collect($data['students'])->unique('id')->count(),
         ]);
     }
 
