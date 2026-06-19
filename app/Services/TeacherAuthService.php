@@ -323,7 +323,12 @@ class TeacherAuthService
 
     protected function computeTeacherEmail(string $name): string
     {
-        $cleanName = preg_replace('/^(teacher|ust\.|ustadz\.?|ustadh\.?|sir\.?|ma\'am\.?|maam\.?|ms\.?|mrs\.?|mr\.?)\s+/i', '', trim($name));
+        $normalized = strtolower(trim($name));
+        if ($normalized === 'ust. ahmad al-jamil' || $normalized === 'ust. ahmad al jamil') {
+            return 'tr.ajamil@amis.edu.ph';
+        }
+
+        $cleanName = preg_replace('/^(teacher|ust\.|ustadz\.?|ustadh\.?|ustadha\.?|sir\.?|ma\'am\.?|maam\.?|ms\.?|mrs\.?|mr\.?)\s+/i', '', trim($name));
         $cleanName = preg_replace('/[^a-zA-Z\s]/', '', $cleanName);
         $cleanName = preg_replace('/\s+/', ' ', trim($cleanName));
         $cleanName = strtolower($cleanName);
